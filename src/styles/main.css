@@ -1189,21 +1189,21 @@ body {
 
 /* Scrollbar styling for textarea */
 .message-textarea::-webkit-scrollbar {
-  width: 6px;
+  width: 0px;
+  display: none;
 }
 
 .message-textarea::-webkit-scrollbar-track {
-  background: var(--gray-100);
-  border-radius: var(--radius-full);
+  background: transparent;
 }
 
 .message-textarea::-webkit-scrollbar-thumb {
-  background: var(--gray-400);
-  border-radius: var(--radius-full);
+  background: transparent;
 }
 
-.message-textarea::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-500);
+.message-textarea {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 /* Enhanced Icon Button Animations */
@@ -1471,3 +1471,4 @@ body {
   max-width: 100%;
   box-sizing: border-box;
 }
+
