@@ -6,9 +6,13 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
   const [inputMessage, setInputMessage] = useState('');
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'nearest'
+    });
   };
 
   useEffect(() => {
@@ -19,7 +23,8 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+      const newHeight = Math.min(textareaRef.current.scrollHeight, 120);
+      textareaRef.current.style.height = newHeight + 'px';
     }
   }, [inputMessage]);
 
@@ -47,7 +52,10 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
   return (
     <div className="chat-container">
       {/* Messages Container */}
-      <div className="messages-container">
+      <div 
+        ref={messagesContainerRef}
+        className="messages-container"
+      >
         {messages.length === 0 ? (
           <div className="empty-chat">
             <div className="empty-chat-content">
@@ -78,7 +86,7 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
         )}
       </div>
 
-      {/* Input Area */}
+      {/* Input Area - Now properly fixed at bottom */}
       <div className="input-area">
         <form onSubmit={handleSubmit} className="input-form">
           <textarea
@@ -92,7 +100,7 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
             rows={1}
             style={{
               resize: 'none',
-              minHeight: '48px',
+              minHeight: '44px', // Better mobile touch target
               maxHeight: '120px'
             }}
           />
@@ -101,8 +109,8 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
             disabled={!inputMessage.trim() || isLoading}
             className="send-button"
             style={{
-              height: '48px',
-              width: '48px',
+              height: '44px', // Better mobile touch target
+              width: '44px',
               flexShrink: 0
             }}
           >
