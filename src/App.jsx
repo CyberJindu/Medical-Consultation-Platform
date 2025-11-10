@@ -5,6 +5,22 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import './styles/main.css';
 
+// Add viewport meta tag for mobile
+const ViewportMeta = () => {
+  useEffect(() => {
+    // Ensure viewport meta tag exists
+    let viewport = document.querySelector('meta[name="viewport"]');
+    if (!viewport) {
+      viewport = document.createElement('meta');
+      viewport.name = 'viewport';
+      viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+      document.head.appendChild(viewport);
+    }
+  }, []);
+  
+  return null;
+};
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -75,6 +91,9 @@ function App() {
 
   return (
     <Router>
+      {/* Add Viewport Meta */}
+      <ViewportMeta />
+      
       {/* ✅ KEY FIX: Add key to force re-render */}
       <div key={authKey} className="App">
         <Routes>
