@@ -1472,137 +1472,68 @@ body {
   box-sizing: border-box;
 }
 
-/* MOBILE RESPONSIVE FIXES */
-/* Ensure proper viewport height handling */
-html, body, #root, .App {
-  height: 100%;
-  overflow: hidden;
+/* MOBILE FIXES - ESSENTIAL ONLY */
+/* Reset the button to original size */
+.send-button {
+  height: 48px !important;
+  width: 48px !important;
+  min-height: 48px !important;
+  min-width: 48px !important;
 }
 
-/* Fixed header for mobile */
-.header-container {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
+/* Fix textbox cutoff issue */
+.input-area {
+  padding: var(--spacing-4) var(--spacing-6);
   background: white;
-  border-bottom: 1px solid var(--gray-200);
-  padding: var(--spacing-3) var(--spacing-4);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  flex-shrink: 0; /* Prevent header from shrinking */
+  border-top: 1px solid var(--gray-200);
+  /* Remove any fixed positioning that might cause cutoff */
+  position: relative;
+  bottom: auto;
 }
 
-/* Dashboard container with proper mobile height */
+/* Ensure proper mobile viewport */
 .dashboard-container {
   height: 100vh;
-  height: 100dvh; /* Dynamic viewport height for mobile */
   display: flex;
   flex-direction: column;
-  background: var(--gray-50);
-  overflow: hidden;
 }
 
-.dashboard-content {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  min-height: 0; /* Allow proper flex shrinking */
-}
-
-/* Chat container with proper mobile sizing */
 .chat-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: white;
   flex: 1;
-  min-height: 0; /* Critical for flexbox on mobile */
 }
 
-/* Messages container - scrollable area */
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-4) var(--spacing-4);
-  min-height: 0; /* Allow scrolling */
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  min-height: 0; /* This allows proper scrolling */
 }
 
-/* Input area - fixed at bottom */
-.input-area {
-  border-top: 1px solid var(--gray-200);
-  padding: var(--spacing-3) var(--spacing-4);
-  background: white;
-  flex-shrink: 0; /* Prevent input from shrinking */
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-}
-
-/* Ensure messages don't get hidden behind input */
-.messages-list {
-  padding-bottom: var(--spacing-2); /* Space above input */
-}
-
-/* Mobile-specific adjustments */
+/* Mobile-specific textbox fix */
 @media (max-width: 768px) {
-  .dashboard-container {
-    height: 100vh;
-    height: 100dvh; /* Use dynamic viewport height */
-  }
-  
-  .header-container {
+  .input-area {
     padding: var(--spacing-3) var(--spacing-4);
+    /* Add safe area for mobile bottom bar */
+    padding-bottom: calc(var(--spacing-3) + env(safe-area-inset-bottom, 0px));
   }
   
   .messages-container {
-    padding: var(--spacing-3) var(--spacing-4);
+    padding-bottom: var(--spacing-2); /* Add space above input */
   }
   
-  .input-area {
-    padding: var(--spacing-3) var(--spacing-4);
-    /* Safe area for mobile notches */
-    padding-bottom: max(var(--spacing-3), env(safe-area-inset-bottom));
-  }
-  
-  /* Adjust message bubbles for mobile */
-  .message-bubble {
-    max-width: 85%;
-  }
-  
-  /* Ensure textarea is mobile-friendly */
-  .message-textarea {
-    font-size: 16px; /* Prevent zoom on iOS */
-    min-height: 44px; /* Better touch target */
-  }
-  
+  /* Keep original button size on mobile */
   .send-button {
-    min-height: 44px; /* Better touch target */
-    min-width: 44px;
+    height: 48px !important;
+    width: 48px !important;
+  }
+  
+  /* Keep original textarea size */
+  .message-textarea {
+    min-height: 48px !important;
   }
 }
 
-/* Prevent horizontal scrolling */
-.dashboard-main {
-  width: 100%;
-  overflow-x: hidden;
-}
-
-/* Empty chat state adjustments */
-.empty-chat {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-bottom: 20%; /* Push content up from input */
-}
-
-/* Loading state adjustments */
-.loading-message {
-  margin-bottom: var(--spacing-2);
-}
 
 
