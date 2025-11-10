@@ -123,3 +123,4 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
 };
 
 export default ChatInterface;
+
