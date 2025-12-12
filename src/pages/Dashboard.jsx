@@ -14,12 +14,13 @@ const Dashboard = ({ user, onLogout }) => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isLoadingFeed, setIsLoadingFeed] = useState(false);
 
-  // Use real chat hook
+  // Use real chat hook - it now returns sendMessageWithImage
   const {
     messages,
     isLoading: isLoadingChat,
     specialistRecommendation,
     sendMessage,
+    sendMessageWithImage, // NEW: Get image handler
     startNewChat,
     loadChat,
     clearRecommendation
@@ -106,6 +107,7 @@ const Dashboard = ({ user, onLogout }) => {
             <ChatInterface
               messages={messages}
               onSendMessage={sendMessage}
+              onSendImageMessage={sendMessageWithImage} // NEW: Pass image handler
               isLoading={isLoadingChat}
             />
           </div>
