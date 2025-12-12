@@ -1537,7 +1537,7 @@ body {
 
 /* ===== IMAGE UPLOAD FIXES ===== */
 
-/* Camera Icon Button - FIXED positioning */
+/* Camera Icon Button */
 .camera-icon-button {
   position: absolute;
   right: 12px;
@@ -1710,37 +1710,40 @@ body {
   background: var(--gray-200);
 }
 
-/* Message Image Display - FIXED: Image ABOVE bubble (replaces old message-image-container) */
+/* Message Image Display - FIXED: Image ABOVE bubble */
 .message-image-above-container {
   margin-bottom: 8px;
-  max-width: 70%;
-  align-self: flex-end;
+  width: 100%;
+  display: flex;
 }
 
 .message-user-container .message-image-above-container {
-  align-self: flex-end;
-  margin-left: auto;
+  justify-content: flex-end;
 }
 
 .message-bot-container .message-image-above-container {
-  align-self: flex-start;
-  margin-right: auto;
+  justify-content: flex-start;
 }
 
+/* Image inside the container */
 .message-image-above {
-  max-width: 100%;
+  max-width: 300px;
   max-height: 300px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--gray-200);
   object-fit: contain;
   background: var(--gray-50);
   display: block;
 }
 
-/* Remove OLD message-image-container styles (they're duplicates) */
-.message-image-container,
-.message-image {
-  display: none;
+/* User image has blue border, bot image has gray */
+.message-user-container .message-image-above {
+  border-color: var(--primary-blue);
+  border-width: 2px;
+}
+
+.message-bot-container .message-image-above {
+  border-color: var(--gray-300);
 }
 
 /* Empty chat image hint */
@@ -1774,11 +1777,8 @@ body {
     bottom: 8px;
   }
   
-  .message-image-above-container {
-    max-width: 85%;
-  }
-  
   .message-image-above {
+    max-width: 250px;
     max-height: 250px;
   }
 }
@@ -1787,11 +1787,11 @@ body {
 @media (min-width: 769px) {
   .camera-icon-button {
     right: 12px;
-    bottom: 12px; /* Fixed: Now at bottom-right */
+    bottom: 12px;
   }
   
   .input-wrapper {
-    align-items: flex-end; /* Better alignment on desktop */
+    align-items: flex-end;
   }
   
   .message-textarea {
