@@ -172,9 +172,6 @@ const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading 
             <div className="empty-chat-content">
               <h3>Welcome to MediGuide</h3>
               <p>Start a conversation about your health concerns</p>
-              <p className="image-hint">
-                💡 You can now upload images of symptoms, rashes, or medical documents
-              </p>
             </div>
           </div>
         ) : (
@@ -306,3 +303,4 @@ const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading 
 };
 
 export default ChatInterface;
+
