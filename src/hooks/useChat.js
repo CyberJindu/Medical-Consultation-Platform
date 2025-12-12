@@ -55,7 +55,9 @@ export const useChat = () => {
           .join(' ');
           
         try {
-          const specialistResponse = await specialistAPI.getRecommendations({ conversationContext });
+          const specialistResponse = await specialistAPI.getRecommendations({ 
+            conversationContext: conversationContext || '' // FIX: Ensure it's a string
+          });
           setSpecialistRecommendation({
             triggered: true,
             specialists: specialistResponse.data.data.specialists,
@@ -87,7 +89,7 @@ export const useChat = () => {
     }
   }, [messages, currentConversationId, specialistRecommendation]);
 
-  // NEW: Send message with image
+  // Send message with image
   const sendMessageWithImage = useCallback(async (messageText, imageFile) => {
     if (!imageFile) return;
 
@@ -139,9 +141,14 @@ export const useChat = () => {
         try {
           const conversationContext = [...messages, userMessage, aiMessageWithId]
             .map(msg => msg.text)
-            .join(' ');
-            
-          const specialistResponse = await specialistAPI.getRecommendations({ conversationContext });
+            .join(' ') || ''; // FIX: Ensure it's a string
+          
+          console.log('📋 Sending specialist request with context:', conversationContext);
+          
+          const specialistResponse = await specialistAPI.getRecommendations({ 
+            conversationContext: conversationContext 
+          });
+          
           setSpecialistRecommendation({
             triggered: true,
             specialists: specialistResponse.data.data.specialists,
@@ -150,6 +157,7 @@ export const useChat = () => {
           });
         } catch (error) {
           console.error('Failed to get specialist recommendations from image:', error);
+          console.error('Error details:', error.response?.data);
         }
       }
 
@@ -206,7 +214,7 @@ export const useChat = () => {
     isLoading,
     specialistRecommendation,
     sendMessage,
-    sendMessageWithImage, // NEW: Export the image function
+    sendMessageWithImage,
     startNewChat,
     loadChat,
     clearRecommendation,
