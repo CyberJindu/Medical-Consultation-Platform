@@ -27,7 +27,7 @@ const MessageBubble = ({ message, isUser, imageUrl }) => {
     <div className={`message-container ${isUser ? 'message-user-container' : 'message-bot-container'}`}>
       {/* Display image ABOVE bubble like ChatGPT */}
       {imageUrl && (
-        <div className="message-image-above-container">
+        <div className={`message-image-above-wrapper ${isUser ? 'message-image-user' : 'message-image-bot'}`}>
           <img 
             src={imageUrl} 
             alt="Uploaded content" 
