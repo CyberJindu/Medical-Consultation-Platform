@@ -1,12 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import MessageBubble from './MessageBubble';
-import { Send } from 'lucide-react';
+import { Send, Camera, X, Upload } from 'lucide-react';
 
-const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
+const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading }) => {
   const [inputMessage, setInputMessage] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [showCameraMenu, setShowCameraMenu] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const cameraMenuRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ 
@@ -19,7 +24,6 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
     scrollToBottom();
   }, [messages]);
 
-  // Auto-resize textarea based on content
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -28,25 +32,111 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
     }
   }, [inputMessage]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (inputMessage.trim() && !isLoading) {
-      onSendMessage(inputMessage);
-      setInputMessage('');
-      // Reset textarea height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+  // Close camera menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (cameraMenuRef.current && !cameraMenuRef.current.contains(event.target)) {
+        setShowCameraMenu(false);
       }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleTakePhoto = async () => {
+    try {
+      // Use MediaDevices API to access camera
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      
+      // In a real app, you'd show a camera preview and capture photo
+      // For now, we'll fall back to file upload
+      console.log('Camera accessed:', stream);
+      setShowCameraMenu(false);
+      
+      // For demo purposes, trigger file input
+      fileInputRef.current?.click();
+      
+      // Stop all tracks
+      stream.getTracks().forEach(track => track.stop());
+    } catch (error) {
+      console.error('Camera error:', error);
+      alert('Unable to access camera. Please upload an image instead.');
+      setShowCameraMenu(false);
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleUploadImage = () => {
+    fileInputRef.current?.click();
+    setShowCameraMenu(false);
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file (JPEG, PNG, etc.)');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+
+      setSelectedImage(file);
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+      setImagePreview(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if ((!inputMessage.trim() && !selectedImage) || isLoading) {
+      return;
+    }
+
+    if (selectedImage) {
+      // Send image + text
+      await onSendImageMessage(inputMessage, selectedImage);
+    } else {
+      // Send text only
+      await onSendMessage(inputMessage);
+    }
+    
+    // Reset form
+    setInputMessage('');
+    removeImage();
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
     }
   };
 
   const handleKeyDown = (e) => {
-    // Enter without Shift -> Send message
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
-    // Shift+Enter -> Natural new line (textarea default behavior)
   };
 
   return (
@@ -61,6 +151,9 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
             <div className="empty-chat-content">
               <h3>Welcome to MediGuide</h3>
               <p>Start a conversation about your health concerns</p>
+              <p className="image-hint">
+                💡 You can now upload images of symptoms, rashes, or medical documents
+              </p>
             </div>
           </div>
         ) : (
@@ -70,6 +163,7 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
                 key={index}
                 message={message.text}
                 isUser={message.isUser}
+                imageUrl={message.imageUrl}
               />
             ))}
             {isLoading && (
@@ -86,30 +180,99 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
         )}
       </div>
 
-      {/* Input Area - Now properly fixed at bottom */}
+      {/* Image Preview Area */}
+      {imagePreview && (
+        <div className="image-preview-container">
+          <div className="image-preview">
+            <img src={imagePreview} alt="Preview" className="preview-image" />
+            <button 
+              onClick={removeImage}
+              className="remove-image-button"
+              aria-label="Remove image"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <p className="image-caption-hint">
+            Add a description of what you're showing (optional)
+          </p>
+        </div>
+      )}
+
+      {/* Camera Menu Popup */}
+      {showCameraMenu && (
+        <div className="camera-menu-overlay">
+          <div ref={cameraMenuRef} className="camera-menu">
+            <button 
+              onClick={handleTakePhoto}
+              className="camera-menu-option"
+            >
+              <Camera size={20} />
+              <span>Take Photo</span>
+            </button>
+            <button 
+              onClick={handleUploadImage}
+              className="camera-menu-option"
+            >
+              <Upload size={20} />
+              <span>Upload Image</span>
+            </button>
+            <button 
+              onClick={() => setShowCameraMenu(false)}
+              className="camera-menu-cancel"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileSelect}
+        style={{ display: 'none' }}
+      />
+
+      {/* Input Area */}
       <div className="input-area">
         <form onSubmit={handleSubmit} className="input-form">
-          <textarea
-            ref={textareaRef}
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe your health concerns..."
-            className="message-textarea"
-            disabled={isLoading}
-            rows={1}
-            style={{
-              resize: 'none',
-              minHeight: '44px', // Better mobile touch target
-              maxHeight: '120px'
-            }}
-          />
+          <div className="input-wrapper">
+            <textarea
+              ref={textareaRef}
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={selectedImage ? "Describe the image (optional)..." : "Describe your health concerns..."}
+              className="message-textarea"
+              disabled={isLoading}
+              rows={1}
+              style={{
+                resize: 'none',
+                minHeight: '44px',
+                maxHeight: '120px',
+                paddingRight: '44px' // Make room for camera icon
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowCameraMenu(!showCameraMenu)}
+              className="camera-icon-button"
+              disabled={isLoading}
+              aria-label="Add image"
+            >
+              <Camera size={20} />
+            </button>
+          </div>
           <button
             type="submit"
-            disabled={!inputMessage.trim() || isLoading}
+            disabled={(!inputMessage.trim() && !selectedImage) || isLoading}
             className="send-button"
             style={{
-              height: '44px', // Better mobile touch target
+              height: '44px',
               width: '44px',
               flexShrink: 0
             }}
@@ -123,4 +286,3 @@ const ChatInterface = ({ messages, onSendMessage, isLoading }) => {
 };
 
 export default ChatInterface;
-
