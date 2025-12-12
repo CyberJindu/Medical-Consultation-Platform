@@ -122,36 +122,39 @@ const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading 
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if ((!inputMessage.trim() && !selectedImage) || isLoading) {
-      return;
-    }
+  e.preventDefault();
+  
+  if ((!inputMessage.trim() && !selectedImage) || isLoading) {
+    return;
+  }
 
-    setIsSendingImage(true);
-    
-    try {
-      if (selectedImage) {
-        // Send image + text
-        await onSendImageMessage(inputMessage, selectedImage);
-        // Clear image preview after successful send
-        removeImage();
-      } else {
-        // Send text only
-        await onSendMessage(inputMessage);
-      }
-      
-      // Reset form
-      setInputMessage('');
-      
-      // Reset textarea height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
-    } finally {
-      setIsSendingImage(false);
+  // Save message before clearing
+  const messageToSend = inputMessage;
+  const imageToSend = selectedImage;
+  
+  // CLEAR TEXT IMMEDIATELY
+  setInputMessage('');
+  removeImage();
+  
+  // Reset textarea height
+  if (textareaRef.current) {
+    textareaRef.current.style.height = 'auto';
+  }
+
+  setIsSendingImage(true);
+  
+  try {
+    if (imageToSend) {
+      // Send image + text
+      await onSendImageMessage(messageToSend, imageToSend);
+    } else {
+      // Send text only
+      await onSendMessage(messageToSend);
     }
-  };
+  } finally {
+    setIsSendingImage(false);
+  }
+};
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -303,4 +306,5 @@ const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading 
 };
 
 export default ChatInterface;
+
 
