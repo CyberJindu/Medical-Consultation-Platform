@@ -1,21 +1,15 @@
 import React, { useState } from 'react';
-import { MessageSquarePlus, History, BookOpen, UserCheck, Menu, X } from 'lucide-react';
+import { Menu, X, User, FileText, LogOut, Home } from 'lucide-react';
 
-const Header = ({ 
-  onNewChat, 
-  onShowHistory, 
-  onShowHealthFeed, 
-  onShowSpecialists,
-  hasNewRecommendations 
-}) => {
+const Header = ({ onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const handleMenuAction = (action) => {
-    action();
+  const handleNavigation = (path) => {
+    window.location.href = path;
     setIsMenuOpen(false);
   };
 
@@ -32,48 +26,50 @@ const Header = ({
           {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
-        {/* Icons that slide out */}
+        {/* Icons that slide out - Matching public version layout */}
         <div className={`header-icons ${isMenuOpen ? 'menu-open' : ''}`}>
           <button 
-            onClick={() => handleMenuAction(onNewChat)}
+            onClick={() => handleNavigation('/dashboard')}
             className="icon-button"
-            title="New Chat"
+            title="Dashboard"
           >
-            <MessageSquarePlus size={24} />
+            <Home size={24} />
           </button>
           
           <button 
-            onClick={() => handleMenuAction(onShowHistory)}
+            onClick={() => handleNavigation('/profile')}
             className="icon-button"
-            title="Chat History"
+            title="My Profile"
           >
-            <History size={24} />
+            <User size={24} />
           </button>
           
           <button 
-            onClick={() => handleMenuAction(onShowHealthFeed)}
+            onClick={() => handleNavigation('/content')}
             className="icon-button"
-            title="Health Feed"
+            title="Content Studio"
           >
-            <BookOpen size={24} />
+            <FileText size={24} />
           </button>
           
           <button 
-            onClick={() => handleMenuAction(onShowSpecialists)}
-            className="icon-button relative"
-            title="Consult Health Specialist"
+            onClick={() => {
+              onLogout();
+              setIsMenuOpen(false);
+            }}
+            className="icon-button"
+            title="Logout"
+            style={{ color: '#EF4444' }}
           >
-            <UserCheck size={24} />
-            {hasNewRecommendations && (
-              <span className="notification-dot"></span>
-            )}
+            <LogOut size={24} />
           </button>
         </div>
       </div>
 
-      {/* Right Side - Brand Name */}
-      <div className="flex items-center">
+      {/* Right Side - Brand Name with "Partners" underneath */}
+      <div className="flex flex-col items-end">
         <h1 className="brand-name">MediGuide</h1>
+        <span className="partners-text">Partners</span>
       </div>
     </header>
   );
