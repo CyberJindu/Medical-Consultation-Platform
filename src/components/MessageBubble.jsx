@@ -25,19 +25,19 @@ const MessageBubble = ({ message, isUser, imageUrl }) => {
 
   return (
     <div className={`message-container ${isUser ? 'message-user-container' : 'message-bot-container'}`}>
+      {/* Display image ABOVE bubble like ChatGPT */}
+      {imageUrl && (
+        <div className="message-image-above-container">
+          <img 
+            src={imageUrl} 
+            alt="Uploaded content" 
+            className="message-image-above"
+            loading="lazy"
+          />
+        </div>
+      )}
+      
       <div className={`message-bubble ${isUser ? 'message-user' : 'message-bot'}`}>
-        {/* Display image if present */}
-        {imageUrl && (
-          <div className="message-image-container">
-            <img 
-              src={imageUrl} 
-              alt="Uploaded content" 
-              className="message-image"
-              loading="lazy"
-            />
-          </div>
-        )}
-        
         {/* Display text message */}
         {message && (isUser ? (
           // User message - preserve new lines with whiteSpace: pre-wrap
