@@ -55,6 +55,13 @@ export const authAPI = {
 export const chatAPI = {
   sendMessage: (message, conversationId = null) => 
     api.post('/chat/send', { message, conversationId }),
+
+  sendMessageWithImage: (formData, conversationId = null) => 
+    api.post('/chat/send-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
   
   getConversations: () => 
     api.get('/chat/conversations'),
@@ -94,5 +101,6 @@ export const healthFeedAPI = {
 // Utility function to check API health
 export const checkAPIHealth = () => 
   api.get('/health');
+
 
 export default api;
