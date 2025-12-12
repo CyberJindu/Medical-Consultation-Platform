@@ -1807,6 +1807,43 @@ body {
   display: none !important;
 }
 
+/* FIX: Make image appear ABOVE text bubble */
+.message-container {
+  display: flex;
+  flex-direction: column;  /* ← This forces vertical stacking */
+  margin-bottom: var(--spacing-4);
+}
+
+.message-user-container {
+  align-items: flex-end;
+}
+
+.message-bot-container {
+  align-items: flex-start;
+}
+
+/* Image wrapper matches bubble width */
+.message-image-above-wrapper {
+  max-width: 70%;
+  margin-bottom: 6px;
+}
+
+.message-image-user {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.message-image-bot {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.message-image-above {
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
 
 
 
