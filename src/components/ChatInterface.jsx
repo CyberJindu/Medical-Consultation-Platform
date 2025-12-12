@@ -7,6 +7,7 @@ const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading 
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [showCameraMenu, setShowCameraMenu] = useState(false);
+  const [isSendingImage, setIsSendingImage] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -45,30 +46,43 @@ const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading 
 
   const handleTakePhoto = async () => {
     try {
-      // Use MediaDevices API to access camera
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
-      
-      // In a real app, you'd show a camera preview and capture photo
-      // For now, we'll fall back to file upload
-      console.log('Camera accessed:', stream);
-      setShowCameraMenu(false);
-      
-      // For demo purposes, trigger file input
-      fileInputRef.current?.click();
-      
-      // Stop all tracks
-      stream.getTracks().forEach(track => track.stop());
+      // Check if on mobile - use camera
+      if (navigator.userAgent.match(/Android|iPhone|iPad|iPod/i)) {
+        // On mobile, we'll use the file input with camera capture
+        setShowCameraMenu(false);
+        // Trigger camera with capture attribute
+        const cameraInput = document.createElement('input');
+        cameraInput.type = 'file';
+        cameraInput.accept = 'image/*';
+        cameraInput.capture = 'environment';
+        cameraInput.onchange = handleFileSelect;
+        cameraInput.click();
+      } else {
+        // On desktop, try to access camera
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: true 
+        });
+        console.log('Camera accessed:', stream);
+        setShowCameraMenu(false);
+        
+        // For demo purposes, trigger file input
+        fileInputRef.current?.click();
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      }
     } catch (error) {
       console.error('Camera error:', error);
-      alert('Unable to access camera. Please upload an image instead.');
       setShowCameraMenu(false);
       fileInputRef.current?.click();
     }
   };
 
   const handleUploadImage = () => {
+    // Clear any capture attribute for upload
+    if (fileInputRef.current) {
+      fileInputRef.current.removeAttribute('capture');
+    }
     fileInputRef.current?.click();
     setShowCameraMenu(false);
   };
@@ -114,21 +128,28 @@ const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading 
       return;
     }
 
-    if (selectedImage) {
-      // Send image + text
-      await onSendImageMessage(inputMessage, selectedImage);
-    } else {
-      // Send text only
-      await onSendMessage(inputMessage);
-    }
+    setIsSendingImage(true);
     
-    // Reset form
-    setInputMessage('');
-    removeImage();
-    
-    // Reset textarea height
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+    try {
+      if (selectedImage) {
+        // Send image + text
+        await onSendImageMessage(inputMessage, selectedImage);
+        // Clear image preview after successful send
+        removeImage();
+      } else {
+        // Send text only
+        await onSendMessage(inputMessage);
+      }
+      
+      // Reset form
+      setInputMessage('');
+      
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
+    } finally {
+      setIsSendingImage(false);
     }
   };
 
@@ -181,7 +202,7 @@ const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading 
       </div>
 
       {/* Image Preview Area */}
-      {imagePreview && (
+      {imagePreview && !isSendingImage && (
         <div className="image-preview-container">
           <div className="image-preview">
             <img src={imagePreview} alt="Preview" className="preview-image" />
@@ -227,12 +248,11 @@ const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading 
         </div>
       )}
 
-      {/* Hidden file input */}
+      {/* Hidden file input - FIXED: No capture attribute by default */}
       <input
         type="file"
         ref={fileInputRef}
         accept="image/*"
-        capture="environment"
         onChange={handleFileSelect}
         style={{ display: 'none' }}
       />
@@ -254,7 +274,7 @@ const ChatInterface = ({ messages, onSendMessage, onSendImageMessage, isLoading 
                 resize: 'none',
                 minHeight: '44px',
                 maxHeight: '120px',
-                paddingRight: '44px' // Make room for camera icon
+                paddingRight: '44px'
               }}
             />
             <button
