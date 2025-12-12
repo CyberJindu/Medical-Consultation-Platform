@@ -1710,41 +1710,6 @@ body {
   background: var(--gray-200);
 }
 
-/* Message Image Display - FIXED: Image ABOVE bubble */
-.message-image-above-container {
-  margin-bottom: 8px;
-  width: 100%;
-  display: flex;
-}
-
-.message-user-container .message-image-above-container {
-  justify-content: flex-end;
-}
-
-.message-bot-container .message-image-above-container {
-  justify-content: flex-start;
-}
-
-/* Image inside the container */
-.message-image-above {
-  max-width: 300px;
-  max-height: 300px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--gray-200);
-  object-fit: contain;
-  background: var(--gray-50);
-  display: block;
-}
-
-/* User image has blue border, bot image has gray */
-.message-user-container .message-image-above {
-  border-color: var(--primary-blue);
-  border-width: 2px;
-}
-
-.message-bot-container .message-image-above {
-  border-color: var(--gray-300);
-}
 
 /* Empty chat image hint */
 .image-hint {
@@ -1798,6 +1763,50 @@ body {
     padding-bottom: 12px;
   }
 }
+
+/* Message Image Display - FIXED: Image ABOVE bubble */
+.message-image-above-wrapper {
+  display: flex;
+  margin-bottom: 8px;
+  max-width: 300px;
+}
+
+.message-user-container .message-image-above-wrapper {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.message-bot-container .message-image-above-wrapper {
+  justify-content: flex-start;
+  margin-right: auto;
+}
+
+.message-image-above {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 16px;
+  border: 2px solid var(--gray-200);
+  object-fit: contain;
+  background: var(--gray-50);
+  display: block;
+}
+
+/* User image has blue border, bot image has gray */
+.message-image-user .message-image-above {
+  border-color: var(--primary-blue);
+  border-width: 2px;
+}
+
+.message-image-bot .message-image-above {
+  border-color: var(--gray-300);
+}
+
+/* Remove any old image styles */
+.message-image-container,
+.message-image {
+  display: none !important;
+}
+
 
 
 
