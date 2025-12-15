@@ -6,7 +6,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://mediguide-backend
 // Create axios instance with default config
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000, // Increased timeout for AI responses
+  timeout: 120000, // Increased timeout for AI responses
   headers: {
     'Content-Type': 'application/json',
   },
@@ -132,4 +132,5 @@ export const chatAPI = {
 
 
 export default api;
+
 
