@@ -15,6 +15,29 @@ export const useChat = (userId) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // Helper function to build valid conversation context
+  const buildConversationContext = (allMessages) => {
+    // Filter out invalid messages and extract text
+    const validMessages = allMessages
+      .filter(msg => msg && msg.text && typeof msg.text === 'string' && msg.text.trim())
+      .map(msg => msg.text.trim());
+    
+    if (validMessages.length === 0) {
+      return '';
+    }
+    
+    // Join with proper formatting
+    const context = validMessages.join('. ');
+    
+    // Ensure minimum length
+    if (context.length < 10) {
+      console.warn('⚠️ Conversation context too short:', context);
+      return validMessages[validMessages.length - 1] || '';
+    }
+    
+    return context;
+  };
+
   // Send text-only message - UPDATED WITH TIMEOUT HANDLING
   const sendMessage = useCallback(async (messageText) => {
     if (!messageText.trim()) return;
@@ -68,13 +91,22 @@ export const useChat = (userId) => {
       // Check if specialist recommendation is needed
       if (needsSpecialist && !specialistRecommendation) {
         console.log('🩺 Getting specialist recommendations...');
-        const conversationContext = [...messages, userMessage, aiMessageWithId]
-          .map(msg => msg.text)
-          .join(' ');
-          
+        
+        // Build proper conversation context
+        const allMessages = [...messages, userMessage, aiMessageWithId];
+        let conversationContext = buildConversationContext(allMessages);
+        
+        // Fallback if context is still empty
+        if (!conversationContext || conversationContext.trim().length < 20) {
+          conversationContext = `User: ${messageText}. Assistant: ${aiMessageWithId.text.substring(0, 200)}`;
+        }
+        
+        console.log('📋 Conversation context length:', conversationContext.length);
+        console.log('📄 First 150 chars:', conversationContext.substring(0, 150));
+        
         try {
           const specialistResponse = await specialistAPI.getRecommendations({ 
-            conversationContext: conversationContext || ''
+            conversationContext: conversationContext 
           });
           
           setSpecialistRecommendation({
@@ -85,7 +117,11 @@ export const useChat = (userId) => {
           });
           console.log('✅ Specialist recommendations loaded');
         } catch (error) {
-          console.error('Failed to get specialist recommendations:', error);
+          console.error('❌ Failed to get specialist recommendations:', error);
+          console.error('🔧 Error details:', error.response?.data);
+          
+          // Don't show error to user if specialists fail - it's optional
+          console.log('ℹ️ Specialist recommendations are optional, continuing chat...');
         }
       }
 
@@ -186,9 +222,16 @@ export const useChat = (userId) => {
 
       // Get specialist recommendations for image analysis
       if (needsSpecialist && !specialistRecommendation) {
-        const conversationContext = [...messages, userMessage, aiMessageWithId]
-          .map(msg => msg.text)
-          .join(' ') || '';
+        // Build proper conversation context
+        const allMessages = [...messages, userMessage, aiMessageWithId];
+        let conversationContext = buildConversationContext(allMessages);
+        
+        // Fallback for image analysis
+        if (!conversationContext || conversationContext.trim().length < 20) {
+          conversationContext = `Image analysis: ${messageText || 'Medical image uploaded'}. ${aiMessageWithId.text.substring(0, 200)}`;
+        }
+        
+        console.log('📷 Image conversation context length:', conversationContext.length);
         
         try {
           const specialistResponse = await specialistAPI.getRecommendations({ 
@@ -203,7 +246,9 @@ export const useChat = (userId) => {
             conversationContext
           });
         } catch (error) {
-          console.error('Failed to get specialist recommendations from image:', error);
+          console.error('❌ Failed to get specialist recommendations from image:', error);
+          console.error('🔧 Error details:', error.response?.data);
+          console.log('ℹ️ Specialist recommendations are optional, continuing chat...');
         }
       }
 
@@ -239,9 +284,6 @@ export const useChat = (userId) => {
       setIsLoading(false);
     }
   }, [messages, currentConversationId, specialistRecommendation, userId]);
-
-  // REMOVED the extractTopicsFromConversation and updateUserHealthInterests functions
-  // because your backend now handles this automatically
 
   const startNewChat = useCallback(() => {
     setMessages([]);
