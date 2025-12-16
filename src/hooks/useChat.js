@@ -15,42 +15,7 @@ export const useChat = (userId) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  // Extract topics from conversation text
-  const extractTopicsFromConversation = useCallback(async (conversationText) => {
-    if (!conversationText?.trim() || !userId) return;
-    
-    try {
-      // Call backend to extract topics (you need to create this endpoint)
-      const response = await chatAPI.extractTopics({
-        conversationText,
-        userId
-      });
-      
-      if (response.data.success && response.data.topics) {
-        setExtractedTopics(prev => [...prev, ...response.data.topics]);
-        return response.data.topics;
-      }
-    } catch (error) {
-      console.error('Failed to extract topics:', error);
-    }
-    return [];
-  }, [userId]);
-
-  // Update user health interests based on topics
-  const updateUserHealthInterests = useCallback(async (topics) => {
-    if (!topics.length || !userId) return;
-    
-    try {
-      await chatAPI.updateHealthInterests({
-        userId,
-        topics
-      });
-    } catch (error) {
-      console.error('Failed to update health interests:', error);
-    }
-  }, [userId]);
-
-  // Send text-only message
+  // Send text-only message - UPDATED WITH TIMEOUT HANDLING
   const sendMessage = useCallback(async (messageText) => {
     if (!messageText.trim()) return;
 
@@ -66,14 +31,18 @@ export const useChat = (userId) => {
     setIsLoading(true);
 
     try {
-      // Send message to backend
+      console.log('📤 Sending message to backend...');
+      
+      // Send message to backend with timeout tracking
       const response = await chatAPI.sendMessage(messageText, currentConversationId);
+      
+      console.log('✅ Backend response received:', response.status);
+      
       const { 
         conversationId, 
-        userMessage: savedUserMsg, 
         aiMessage, 
         needsSpecialist,
-        extractedTopics: aiExtractedTopics // Backend should return this
+        extractedTopics: aiExtractedTopics
       } = response.data.data;
 
       // Update conversation ID if this is a new conversation
@@ -87,23 +56,18 @@ export const useChat = (userId) => {
         id: (Date.now() + 1).toString()
       };
       
+      console.log('🤖 Adding AI response to chat');
       setMessages(prev => [...prev, aiMessageWithId]);
 
       // Store extracted topics from backend
       if (aiExtractedTopics && aiExtractedTopics.length > 0) {
+        console.log('📊 Extracted topics from backend:', aiExtractedTopics.length);
         setExtractedTopics(prev => [...prev, ...aiExtractedTopics]);
-        await updateUserHealthInterests(aiExtractedTopics);
-      } else {
-        // Fallback: Extract topics from conversation
-        const conversationText = [...messages, userMessage, aiMessageWithId]
-          .map(msg => msg.text)
-          .join(' ');
-        const topics = await extractTopicsFromConversation(conversationText);
-        await updateUserHealthInterests(topics);
       }
 
       // Check if specialist recommendation is needed
       if (needsSpecialist && !specialistRecommendation) {
+        console.log('🩺 Getting specialist recommendations...');
         const conversationContext = [...messages, userMessage, aiMessageWithId]
           .map(msg => msg.text)
           .join(' ');
@@ -119,6 +83,7 @@ export const useChat = (userId) => {
             analysis: specialistResponse.data.data,
             conversationContext
           });
+          console.log('✅ Specialist recommendations loaded');
         } catch (error) {
           console.error('Failed to get specialist recommendations:', error);
         }
@@ -128,25 +93,43 @@ export const useChat = (userId) => {
       const updatedConversation = [...messages, userMessage, aiMessageWithId];
       setConversationHistory(updatedConversation);
 
+      console.log('🎉 Message flow completed successfully');
+
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
+      
+      let errorText;
+      
+      // DETECT TIMEOUT SPECIFICALLY
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        errorText = "MediBot is taking longer than usual to respond. Your message has been received and I'm analyzing it now. Please wait a moment...";
+      } else if (error.response?.status === 504 || error.response?.status === 502) {
+        errorText = "MediBot is currently processing your request. This might take a moment due to high demand. Please wait...";
+      } else {
+        errorText = error.response?.data?.message || 
+                   "I apologize, but I'm having trouble connecting to MediBot. Please check your internet connection and try again.";
+      }
       
       const errorMessage = {
         id: (Date.now() + 1).toString(),
-        text: error.response?.data?.message || 
-              "I apologize, but I'm having trouble connecting to MediBot. Please check your internet connection and try again.",
+        text: errorText,
         isUser: false,
         timestamp: new Date(),
-        isError: true
+        isError: true,
+        isProcessing: error.code === 'ECONNABORTED' // Mark as processing if timeout
       };
       
       setMessages(prev => [...prev, errorMessage]);
+      
+      // If it was a timeout, the actual response might still come later
+      // We'll handle that separately if needed
+      
     } finally {
       setIsLoading(false);
     }
-  }, [messages, currentConversationId, specialistRecommendation, userId, extractTopicsFromConversation, updateUserHealthInterests]);
+  }, [messages, currentConversationId, specialistRecommendation, userId]);
 
-  // Send message with image
+  // Send message with image - UPDATED
   const sendMessageWithImage = useCallback(async (messageText, imageFile) => {
     if (!imageFile) return;
 
@@ -161,6 +144,7 @@ export const useChat = (userId) => {
       imageUrl: tempImageUrl
     };
 
+    console.log('📸 Starting image upload process...');
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
@@ -172,12 +156,14 @@ export const useChat = (userId) => {
         formData.append('conversationId', currentConversationId);
       }
 
+      console.log('📤 Sending image to backend...');
       const response = await chatAPI.sendMessageWithImage(formData);
+      console.log('✅ Image response received');
+      
       const { 
         conversationId, 
-        aiMessage, 
+        aiMessage,
         needsSpecialist,
-        isImageAnalysis,
         extractedTopics: imageTopics 
       } = response.data.data;
 
@@ -188,7 +174,7 @@ export const useChat = (userId) => {
       const aiMessageWithId = {
         ...aiMessage,
         id: (Date.now() + 1).toString(),
-        isImageAnalysis: isImageAnalysis || true
+        isImageAnalysis: true
       };
       
       setMessages(prev => [...prev, aiMessageWithId]);
@@ -196,7 +182,6 @@ export const useChat = (userId) => {
       // Store topics from image analysis
       if (imageTopics && imageTopics.length > 0) {
         setExtractedTopics(prev => [...prev, ...imageTopics]);
-        await updateUserHealthInterests(imageTopics);
       }
 
       // Get specialist recommendations for image analysis
@@ -226,16 +211,19 @@ export const useChat = (userId) => {
       setConversationHistory(updatedConversation);
 
     } catch (error) {
-      console.error('Error sending image message:', error);
+      console.error('❌ Error sending image message:', error);
       
-      let errorText = "I apologize, but I'm having trouble analyzing this image. ";
+      let errorText;
       
-      if (error.response?.status === 413) {
+      // SPECIFIC TIMEOUT HANDLING FOR IMAGES
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        errorText = "Analyzing this image is taking longer than expected. Your image has been received and MediBot is processing it. Please wait...";
+      } else if (error.response?.status === 413) {
         errorText = "The image is too large. Please upload an image smaller than 5MB.";
       } else if (error.response?.status === 415) {
         errorText = "Please upload a valid image file (JPEG, PNG, etc.).";
       } else {
-        errorText += "Please try again or describe the issue in text.";
+        errorText = "I apologize, but I'm having trouble analyzing this image. Please try again or describe the issue in text.";
       }
       
       const errorMessage = {
@@ -250,7 +238,10 @@ export const useChat = (userId) => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, currentConversationId, specialistRecommendation, userId, updateUserHealthInterests]);
+  }, [messages, currentConversationId, specialistRecommendation, userId]);
+
+  // REMOVED the extractTopicsFromConversation and updateUserHealthInterests functions
+  // because your backend now handles this automatically
 
   const startNewChat = useCallback(() => {
     setMessages([]);
