@@ -6,7 +6,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://mediguide-backend
 // Create axios instance with default config
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 120000, // Increased timeout for AI responses
+  timeout: 120000, // 2 minutes timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -40,7 +40,7 @@ api.interceptors.response.use(
   }
 );
 
-// API endpoints
+// API endpoints - SINGLE DEFINITION OF EACH
 export const authAPI = {
   login: (phoneNumber) => 
     api.post('/auth/login', { phoneNumber }),
@@ -71,6 +71,13 @@ export const chatAPI = {
   
   deleteConversation: (conversationId) => 
     api.delete(`/chat/conversations/${conversationId}`),
+  
+  // NEW ENDPOINTS FOR TOPIC EXTRACTION
+  extractTopics: (data) => 
+    api.post('/chat/extract-topics', data),
+  
+  updateHealthInterests: (data) => 
+    api.post('/chat/update-interests', data),
 };
 
 export const specialistAPI = {
@@ -102,35 +109,4 @@ export const healthFeedAPI = {
 export const checkAPIHealth = () => 
   api.get('/health');
 
-export const chatAPI = {
-  sendMessage: (message, conversationId = null) => 
-    api.post('/chat/send', { message, conversationId }),
-
-  sendMessageWithImage: (formData, conversationId = null) => 
-    api.post('/chat/send-image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }),
-  
-  getConversations: () => 
-    api.get('/chat/conversations'),
-  
-  getConversation: (conversationId) => 
-    api.get(`/chat/conversations/${conversationId}`),
-  
-  deleteConversation: (conversationId) => 
-    api.delete(`/chat/conversations/${conversationId}`),
-  
-  // NEW ENDPOINTS FOR TOPIC EXTRACTION
-  extractTopics: (data) => 
-    api.post('/chat/extract-topics', data),
-  
-  updateHealthInterests: (data) => 
-    api.post('/chat/update-interests', data),
-};
-
-
 export default api;
-
-
