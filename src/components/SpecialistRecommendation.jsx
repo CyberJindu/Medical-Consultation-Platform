@@ -1,18 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Star, UserCheck, Shield, Clock, Languages, Video } from 'lucide-react';
+import { MessageCircle, Star, UserCheck, Shield, Clock, Languages, Video, AlertTriangle, Activity } from 'lucide-react';
 import { specialistAPI } from '../services/api.js';
 
-const SpecialistRecommendation = ({ conversationContext, isOpen, onClose, onConsultSpecialist }) => {
+const SpecialistRecommendation = ({ 
+  conversationContext, 
+  healthAnalysis, // ⚡ NEW: Receive health analysis data
+  isOpen, 
+  onClose, 
+  onConsultSpecialist,
+  isProactive = false // ⚡ NEW: Flag for auto-opened recommendations
+}) => {
   const [specialists, setSpecialists] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
+  const [autoFetching, setAutoFetching] = useState(false);
 
   useEffect(() => {
-    if (isOpen && conversationContext) {
+    // ⚡ NEW: Auto-fetch if health analysis suggests specialist needed
+    if (healthAnalysis?.specialistAdvised && !isOpen && !autoFetching) {
+      console.log('⚡ Proactive specialist recommendation triggered');
+      setAutoFetching(true);
+      fetchSpecialistsProactively();
+    }
+    
+    // Manual fetch when panel opens
+    if (isOpen && conversationContext && !isProactive) {
       fetchSpecialists();
     }
-  }, [isOpen, conversationContext]);
+  }, [isOpen, conversationContext, healthAnalysis]);
+
+  const fetchSpecialistsProactively = async () => {
+    if (!conversationContext?.trim()) {
+      console.log('No conversation context for proactive fetch');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const response = await specialistAPI.getRecommendations({ 
+        conversationContext: conversationContext 
+      });
+      
+      const data = response.data.data;
+      setSpecialists(data.specialists || []);
+      setAnalysis({
+        verificationImpact: data.verificationImpact,
+        topSpecialistVerified: data.topSpecialistVerified,
+        verifiedCount: data.verifiedCount
+      });
+      
+      // Auto-open panel if we got specialists
+      if (data.specialists?.length > 0) {
+        // Trigger parent to open panel
+        if (onConsultSpecialist) {
+          onConsultSpecialist(data.specialists[0], true); // true = proactive
+        }
+      }
+    } catch (error) {
+      console.error('Proactive fetch failed:', error);
+    } finally {
+      setIsLoading(false);
+      setAutoFetching(false);
+    }
+  };
 
   const fetchSpecialists = async () => {
     if (!conversationContext?.trim()) {
@@ -81,32 +133,48 @@ const SpecialistRecommendation = ({ conversationContext, isOpen, onClose, onCons
   const handleConsult = (specialist) => {
     if (onConsultSpecialist) {
       onConsultSpecialist(specialist);
-    } else {
-      // Default behavior
-      alert(`Would consult with ${specialist.name}`);
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !isProactive) return null;
 
   return (
-    <div className={`specialist-panel ${isOpen ? 'open' : ''}`}>
+    <div className={`specialist-panel ${isOpen ? 'open' : ''} ${isProactive ? 'proactive' : ''}`}>
       {/* Header */}
       <div className="panel-header">
         <div className="panel-header-content">
-          <h2>Recommended Specialists</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
+            <h2>Recommended Specialists</h2>
+            {isProactive && (
+              <div className="proactive-badge">
+                <Activity size={16} />
+                <span>Proactive Recommendation</span>
+              </div>
+            )}
+          </div>
           <button onClick={onClose} className="close-button">✕</button>
         </div>
         
-        {analysis && (
+        {/* ⚡ NEW: Health state indicator */}
+        {healthAnalysis && (
           <div className="panel-subtitle">
-            <p>
-              {analysis.verifiedCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
+              <div className={`health-state-indicator ${healthAnalysis.healthState}`}>
+                <AlertTriangle size={14} />
+                <span>Health State: {healthAnalysis.healthState.toUpperCase()}</span>
+                <span className="severity-score">({healthAnalysis.severityScore}/100)</span>
+              </div>
+              
+              {analysis && (
                 <span className="verification-highlight">
                   {analysis.verifiedCount} verified • {analysis.topSpecialistVerified ? 'Top specialist verified ✓' : ''}
                 </span>
               )}
-              Ranked by relevance and verification status
+            </div>
+            <p style={{ marginTop: 'var(--spacing-2)' }}>
+              {healthAnalysis.specialistAdvised 
+                ? `Based on your symptoms, we recommend consulting a ${healthAnalysis.recommendedSpecialty}`
+                : 'Ranked by relevance and verification status'}
             </p>
           </div>
         )}
@@ -136,6 +204,21 @@ const SpecialistRecommendation = ({ conversationContext, isOpen, onClose, onCons
           </div>
         ) : (
           <>
+            {/* ⚡ NEW: Proactive recommendation notice */}
+            {isProactive && (
+              <div className="proactive-notice">
+                <AlertTriangle size={16} />
+                <div>
+                  <strong>Based on your symptoms:</strong> We proactively recommend consulting with these specialists. 
+                  {healthAnalysis?.keySymptoms?.length > 0 && (
+                    <div style={{ marginTop: '4px', fontSize: '0.875rem' }}>
+                      Detected symptoms: {healthAnalysis.keySymptoms.join(', ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Verification Notice */}
             {analysis?.verificationImpact && (
               <div className="verification-notice">
@@ -260,6 +343,69 @@ const SpecialistRecommendation = ({ conversationContext, isOpen, onClose, onCons
           </>
         )}
       </div>
+
+      {/* Add CSS for new styles */}
+      <style jsx>{`
+        .proactive-badge {
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          color: white;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .health-state-indicator {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 12px;
+          border-radius: 20px;
+          font-size: 0.875rem;
+          font-weight: 600;
+        }
+        
+        .health-state-indicator.critical {
+          background: #fee2e2;
+          color: #dc2626;
+          border: 1px solid #fca5a5;
+        }
+        
+        .health-state-indicator.urgent {
+          background: #fef3c7;
+          color: #d97706;
+          border: 1px solid #fbbf24;
+        }
+        
+        .health-state-indicator.routine {
+          background: #dbeafe;
+          color: #2563eb;
+          border: 1px solid #93c5fd;
+        }
+        
+        .severity-score {
+          font-size: 0.75rem;
+          opacity: 0.8;
+        }
+        
+        .proactive-notice {
+          background: linear-gradient(135deg, #fef3c7, #fef9c3);
+          border: 1px solid #fbbf24;
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        
+        .proactive-notice strong {
+          color: #92400e;
+        }
+      `}</style>
     </div>
   );
 };
