@@ -137,10 +137,11 @@ const Dashboard = ({ user, onLogout }) => {
         posts={healthFeed}
         isOpen={activeView === 'healthFeed'}
         onClose={() => setActiveView('chat')}
-        isLoading={isLoadingFeed}
+        userId={user?._id || user?.id}
       />
     </div>
   );
 };
 
 export default Dashboard;
+
