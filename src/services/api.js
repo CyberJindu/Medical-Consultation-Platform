@@ -103,6 +103,9 @@ export const healthFeedAPI = {
   
   shareArticle: (articleId) => 
     api.post(`/feed/articles/${articleId}/share`),
+
+  updateUserTopics: (topics, context) => 
+    api.post('/feed/user/topics', { topics, context }),
 };
 
 // Utility function to check API health
@@ -110,3 +113,4 @@ export const checkAPIHealth = () =>
   api.get('/health');
 
 export default api;
+
