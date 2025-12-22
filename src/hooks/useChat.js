@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { chatAPI, specialistAPI } from '../services/api.js';
+import { chatAPI, specialistAPI, healthFeedAPI } from '../services/api.js';
 
 export const useChat = (userId) => {
   const [messages, setMessages] = useState([]);
@@ -87,6 +88,15 @@ export const useChat = (userId) => {
         console.log('📊 Extracted topics from backend:', aiExtractedTopics.length);
         setExtractedTopics(prev => [...prev, ...aiExtractedTopics]);
       }
+
+      // SAVE topics to user's profile in database
+      try {
+        await healthFeedAPI.updateUserTopics(aiExtractedTopics, `From chat: ${messageText.substring(0, 50)}`);
+        console.log('✅ Topics saved to user profile');
+      } catch (saveError) {
+        console.error('❌ Failed to save topics:', saveError);
+      }
+    }
 
       // Check if specialist recommendation is needed
       if (needsSpecialist && !specialistRecommendation) {
@@ -316,3 +326,4 @@ export const useChat = (userId) => {
     scrollToBottom
   };
 };
+
