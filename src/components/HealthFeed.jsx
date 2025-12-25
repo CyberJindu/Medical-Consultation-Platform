@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bookmark, Share2, Calendar, Rss, Sparkles, TrendingUp } from 'lucide-react';
+import { Bookmark, Share2, Calendar, Sparkles } from 'lucide-react';
 import { healthFeedAPI } from '../services/api.js';
 
 const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
@@ -8,12 +8,10 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   const [error, setError] = useState(null);
   
   useEffect(() => {
-    // If we receive posts as props, use them directly (from Dashboard pre-load)
     if (initialPosts && initialPosts.length > 0) {
       console.log('✅ Using pre-loaded posts from Dashboard:', initialPosts.length);
       setPosts(initialPosts);
     }
-    // Only fetch if we have no posts but we have userId
     else if (userId && (!initialPosts || initialPosts.length === 0)) {
       console.log('🔄 Fetching personalized feed for userId:', userId);
       fetchPersonalizedFeed();
@@ -28,7 +26,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
       const response = await healthFeedAPI.getPersonalizedFeed();
       console.log('📊 Feed API response:', response.data);
       
-      // Check response structure correctly
       if (response.data && response.data.success) {
         const feedData = response.data.data?.feed || [];
         console.log('✅ Personalized feed loaded:', feedData.length, 'posts');
@@ -36,7 +33,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
         if (feedData.length > 0) {
           console.log('📝 First post:', {
             title: feedData[0]?.title,
-            relevanceScore: feedData[0]?.relevanceScore,
             topics: feedData[0]?.topics
           });
         }
@@ -50,12 +46,10 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
       console.error('❌ Failed to fetch health feed:', error);
       setError('Failed to load personalized content. Please try again.');
       
-      // If we have initial posts, use them as fallback
       if (initialPosts && initialPosts.length > 0) {
         console.log('🔄 Using initial posts as fallback');
         setPosts(initialPosts);
       } else {
-        // Only use mock data if no posts at all
         console.log('📝 Showing placeholder content');
         setPosts([{
           _id: 'mock-1',
@@ -64,7 +58,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
           excerpt: 'Your personalized health feed will appear here.',
           topics: ['health', 'wellness'],
           publishDate: new Date(),
-          relevanceScore: 10,
           author: 'MediGuide',
           readTime: '2 min read',
           shareCount: 0,
@@ -79,7 +72,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   const handleSaveArticle = async (articleId) => {
     try {
       await healthFeedAPI.saveArticle(articleId);
-      // Update local state to reflect save count
       setPosts(posts.map(post => 
         post._id === articleId 
           ? { ...post, saveCount: (post.saveCount || 0) + 1, saved: true }
@@ -93,7 +85,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   const handleShareArticle = async (articleId) => {
     try {
       await healthFeedAPI.shareArticle(articleId);
-      // Update local state to reflect share count
       setPosts(posts.map(post => 
         post._id === articleId 
           ? { ...post, shareCount: (post.shareCount || 0) + 1 }
@@ -116,7 +107,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
 
   return (
     <div className={`healthfeed-panel ${isOpen ? 'open' : ''}`}>
-      {/* Header */}
       <div className="panel-header">
         <div className="panel-header-content">
           <h2>Health Feed</h2>
@@ -124,15 +114,9 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
         </div>
         <p className="panel-subtitle">
           Personalized based on your conversations
-          {posts.length > 0 && posts[0]?.relevanceScore && (
-            <span style={{ marginLeft: '8px', color: 'var(--primary-color)', fontWeight: '500' }}>
-              • {posts[0]?.relevanceScore}% match to your interests
-            </span>
-          )}
         </p>
       </div>
 
-      {/* Posts List */}
       <div className="panel-content">
         {isLoading ? (
           <div className="loading-state">
@@ -170,25 +154,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                     <Calendar size={14} />
                     {formatDate(post.publishDate || new Date())}
                   </div>
-                  
-                  {post.relevanceScore && post.relevanceScore > 20 && (
-                    <div className="relevance-badge" style={{
-                      background: post.relevanceScore > 70 ? '#D1FAE5' : 
-                                 post.relevanceScore > 40 ? '#FEF3C7' : '#DBEAFE',
-                      color: post.relevanceScore > 70 ? '#065F46' : 
-                            post.relevanceScore > 40 ? '#92400E' : '#1E40AF',
-                      padding: '4px 10px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      <TrendingUp size={12} />
-                      <span>{post.relevanceScore}% match</span>
-                    </div>
-                  )}
                 </div>
                 
                 <h3 className="post-title">{post.title}</h3>
@@ -206,19 +171,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                         +{post.topics.length - 3} more
                       </span>
                     )}
-                  </div>
-                )}
-                
-                {post.matchingTopics && post.matchingTopics.length > 0 && (
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#6B7280',
-                    marginTop: '8px',
-                    padding: '4px 8px',
-                    background: '#F3F4F6',
-                    borderRadius: '6px'
-                  }}>
-                    <strong>Matches your interests:</strong> {post.matchingTopics.map(mt => mt.userTopic).join(', ')}
                   </div>
                 )}
                 
@@ -256,7 +208,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
           </div>
         )}
         
-        {/* Debug info - remove in production */}
         {process.env.NODE_ENV === 'development' && posts.length > 0 && (
           <div style={{
             marginTop: '20px',
@@ -268,8 +219,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
             color: '#6B7280'
           }}>
             <strong>Debug Info:</strong> Showing {posts.length} posts • 
-            User ID: {userId || 'not provided'} • 
-            First post relevance: {posts[0]?.relevanceScore || 'N/A'}%
+            User ID: {userId || 'not provided'}
           </div>
         )}
       </div>
