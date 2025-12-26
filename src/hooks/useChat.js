@@ -15,21 +15,14 @@ export const useChat = (userId) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  // Helper function to build valid conversation context
   const buildConversationContext = (allMessages) => {
-    // Filter out invalid messages and extract text
     const validMessages = allMessages
       .filter(msg => msg && msg.text && typeof msg.text === 'string' && msg.text.trim())
       .map(msg => msg.text.trim());
     
-    if (validMessages.length === 0) {
-      return '';
-    }
+    if (validMessages.length === 0) return '';
     
-    // Join with proper formatting
     const context = validMessages.join('. ');
-    
-    // Ensure minimum length
     if (context.length < 10) {
       console.warn('⚠️ Conversation context too short:', context);
       return validMessages[validMessages.length - 1] || '';
@@ -38,7 +31,6 @@ export const useChat = (userId) => {
     return context;
   };
 
-  // Send text-only message - UPDATED WITH TIMEOUT HANDLING
   const sendMessage = useCallback(async (messageText) => {
     if (!messageText.trim()) return;
 
@@ -49,16 +41,12 @@ export const useChat = (userId) => {
       timestamp: new Date()
     };
 
-    // Add user message immediately
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
     try {
       console.log('📤 Sending message to backend...');
-      
-      // Send message to backend with timeout tracking
       const response = await chatAPI.sendMessage(messageText, currentConversationId);
-      
       console.log('✅ Backend response received:', response.status);
       
       const { 
@@ -68,12 +56,10 @@ export const useChat = (userId) => {
         extractedTopics: aiExtractedTopics
       } = response.data.data;
 
-      // Update conversation ID if this is a new conversation
       if (conversationId && !currentConversationId) {
         setCurrentConversationId(conversationId);
       }
 
-      // Add AI response
       const aiMessageWithId = {
         ...aiMessage,
         id: (Date.now() + 1).toString()
@@ -86,26 +72,23 @@ export const useChat = (userId) => {
       if (aiExtractedTopics && aiExtractedTopics.length > 0) {
         console.log('📊 Extracted topics from backend:', aiExtractedTopics.length);
         setExtractedTopics(prev => [...prev, ...aiExtractedTopics]);
-      
 
-      // SAVE topics to user's profile in database
-      try {
-        await healthFeedAPI.updateUserTopics(aiExtractedTopics, `From chat: ${messageText.substring(0, 50)}`);
-        console.log('✅ Topics saved to user profile');
-      } catch (saveError) {
-        console.error('❌ Failed to save topics:', saveError);
+        // SAVE topics to user's profile in database
+        try {
+          await healthFeedAPI.updateUserTopics(aiExtractedTopics, `From chat: ${messageText.substring(0, 50)}`);
+          console.log('✅ Topics saved to user profile');
+        } catch (saveError) {
+          console.error('❌ Failed to save topics:', saveError);
+        }
       }
-    }
 
       // Check if specialist recommendation is needed
       if (needsSpecialist && !specialistRecommendation) {
         console.log('🩺 Getting specialist recommendations...');
         
-        // Build proper conversation context
         const allMessages = [...messages, userMessage, aiMessageWithId];
         let conversationContext = buildConversationContext(allMessages);
         
-        // Fallback if context is still empty
         if (!conversationContext || conversationContext.trim().length < 20) {
           conversationContext = `User: ${messageText}. Assistant: ${aiMessageWithId.text.substring(0, 200)}`;
         }
@@ -128,24 +111,18 @@ export const useChat = (userId) => {
         } catch (error) {
           console.error('❌ Failed to get specialist recommendations:', error);
           console.error('🔧 Error details:', error.response?.data);
-          
-          // Don't show error to user if specialists fail - it's optional
           console.log('ℹ️ Specialist recommendations are optional, continuing chat...');
         }
       }
 
-      // Update conversation history
       const updatedConversation = [...messages, userMessage, aiMessageWithId];
       setConversationHistory(updatedConversation);
-
       console.log('🎉 Message flow completed successfully');
 
     } catch (error) {
       console.error('❌ Error sending message:', error);
       
       let errorText;
-      
-      // DETECT TIMEOUT SPECIFICALLY
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
         errorText = "MediBot is taking longer than usual to respond. Your message has been received and I'm analyzing it now. Please wait a moment...";
       } else if (error.response?.status === 504 || error.response?.status === 502) {
@@ -161,20 +138,15 @@ export const useChat = (userId) => {
         isUser: false,
         timestamp: new Date(),
         isError: true,
-        isProcessing: error.code === 'ECONNABORTED' // Mark as processing if timeout
+        isProcessing: error.code === 'ECONNABORTED'
       };
       
       setMessages(prev => [...prev, errorMessage]);
-      
-      // If it was a timeout, the actual response might still come later
-      // We'll handle that separately if needed
-      
     } finally {
       setIsLoading(false);
     }
   }, [messages, currentConversationId, specialistRecommendation, userId]);
 
-  // Send message with image - UPDATED
   const sendMessageWithImage = useCallback(async (messageText, imageFile) => {
     if (!imageFile) return;
 
@@ -224,18 +196,14 @@ export const useChat = (userId) => {
       
       setMessages(prev => [...prev, aiMessageWithId]);
 
-      // Store topics from image analysis
       if (imageTopics && imageTopics.length > 0) {
         setExtractedTopics(prev => [...prev, ...imageTopics]);
       }
 
-      // Get specialist recommendations for image analysis
       if (needsSpecialist && !specialistRecommendation) {
-        // Build proper conversation context
         const allMessages = [...messages, userMessage, aiMessageWithId];
         let conversationContext = buildConversationContext(allMessages);
         
-        // Fallback for image analysis
         if (!conversationContext || conversationContext.trim().length < 20) {
           conversationContext = `Image analysis: ${messageText || 'Medical image uploaded'}. ${aiMessageWithId.text.substring(0, 200)}`;
         }
@@ -268,8 +236,6 @@ export const useChat = (userId) => {
       console.error('❌ Error sending image message:', error);
       
       let errorText;
-      
-      // SPECIFIC TIMEOUT HANDLING FOR IMAGES
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
         errorText = "Analyzing this image is taking longer than expected. Your image has been received and MediBot is processing it. Please wait...";
       } else if (error.response?.status === 413) {
@@ -325,4 +291,3 @@ export const useChat = (userId) => {
     scrollToBottom
   };
 };
-
