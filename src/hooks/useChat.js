@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from 'react';
-import { chatAPI, specialistAPI } from '../services/api.js';
 import { chatAPI, specialistAPI, healthFeedAPI } from '../services/api.js';
 
 export const useChat = (userId) => {
@@ -96,7 +95,6 @@ export const useChat = (userId) => {
       } catch (saveError) {
         console.error('❌ Failed to save topics:', saveError);
       }
-    }
 
       // Check if specialist recommendation is needed
       if (needsSpecialist && !specialistRecommendation) {
@@ -326,4 +324,3 @@ export const useChat = (userId) => {
     scrollToBottom
   };
 };
-
