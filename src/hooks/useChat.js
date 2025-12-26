@@ -86,7 +86,7 @@ export const useChat = (userId) => {
       if (aiExtractedTopics && aiExtractedTopics.length > 0) {
         console.log('📊 Extracted topics from backend:', aiExtractedTopics.length);
         setExtractedTopics(prev => [...prev, ...aiExtractedTopics]);
-      }
+      
 
       // SAVE topics to user's profile in database
       try {
@@ -95,6 +95,7 @@ export const useChat = (userId) => {
       } catch (saveError) {
         console.error('❌ Failed to save topics:', saveError);
       }
+    }
 
       // Check if specialist recommendation is needed
       if (needsSpecialist && !specialistRecommendation) {
@@ -324,3 +325,4 @@ export const useChat = (userId) => {
     scrollToBottom
   };
 };
+
