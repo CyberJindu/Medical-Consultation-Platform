@@ -8,257 +8,292 @@ export const useChat = (userId) => {
   const [specialistRecommendation, setSpecialistRecommendation] = useState(null);
   const [extractedTopics, setExtractedTopics] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
-  
+
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // Build conversation context safely
   const buildConversationContext = (allMessages) => {
     const validMessages = allMessages
-      .filter(msg => msg && msg.text && typeof msg.text === 'string' && msg.text.trim())
-      .map(msg => msg.text.trim());
-    
+      .filter(
+        (msg) =>
+          msg &&
+          msg.text &&
+          typeof msg.text === 'string' &&
+          msg.text.trim()
+      )
+      .map((msg) => msg.text.trim());
+
     if (validMessages.length === 0) return '';
-    
+
     const context = validMessages.join('. ');
-    if (context.length < 10) {
-      console.warn('⚠️ Conversation context too short:', context);
-      return validMessages[validMessages.length - 1] || '';
-    }
-    
-    return context;
+    return context.length < 10
+      ? validMessages[validMessages.length - 1]
+      : context;
   };
 
-  const sendMessage = useCallback(async (messageText) => {
-    if (!messageText.trim()) return;
+  // =========================
+  // SEND TEXT MESSAGE
+  // =========================
+  const sendMessage = useCallback(
+    async (messageText) => {
+      if (!messageText.trim()) return;
 
-    const userMessage = {
-      id: Date.now().toString(),
-      text: messageText,
-      isUser: true,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-
-    try {
-      console.log('📤 Sending message to backend...');
-      const response = await chatAPI.sendMessage(messageText, currentConversationId);
-      console.log('✅ Backend response received:', response.status);
-      
-      const { 
-        conversationId, 
-        aiMessage, 
-        needsSpecialist,
-        extractedTopics: aiExtractedTopics
-      } = response.data.data;
-
-      if (conversationId && !currentConversationId) {
-        setCurrentConversationId(conversationId);
-      }
-
-      const aiMessageWithId = {
-        ...aiMessage,
-        id: (Date.now() + 1).toString()
-      };
-      
-      console.log('🤖 Adding AI response to chat');
-      setMessages(prev => [...prev, aiMessageWithId]);
-
-      // Store extracted topics from backend
-      if (aiExtractedTopics && aiExtractedTopics.length > 0) {
-        console.log('📊 Extracted topics from backend:', aiExtractedTopics.length);
-        setExtractedTopics(prev => [...prev, ...aiExtractedTopics]);
-
-        // SAVE topics to user's profile in database
-        try {
-          await healthFeedAPI.updateUserTopics(aiExtractedTopics, `From chat: ${messageText.substring(0, 50)}`);
-          console.log('✅ Topics saved to user profile');
-        } catch (saveError) {
-          console.error('❌ Failed to save topics:', saveError);
-        }
-      }
-
-      // Check if specialist recommendation is needed
-      if (needsSpecialist && !specialistRecommendation) {
-        console.log('🩺 Getting specialist recommendations...');
-        
-        const allMessages = [...messages, userMessage, aiMessageWithId];
-        let conversationContext = buildConversationContext(allMessages);
-        
-        if (!conversationContext || conversationContext.trim().length < 20) {
-          conversationContext = `User: ${messageText}. Assistant: ${aiMessageWithId.text.substring(0, 200)}`;
-        }
-        
-        console.log('📋 Conversation context length:', conversationContext.length);
-        console.log('📄 First 150 chars:', conversationContext.substring(0, 150));
-        
-        try {
-          const specialistResponse = await specialistAPI.getRecommendations({ 
-            conversationContext: conversationContext 
-          });
-          
-          setSpecialistRecommendation({
-            triggered: true,
-            specialists: specialistResponse.data.data.specialists,
-            analysis: specialistResponse.data.data,
-            conversationContext
-          });
-          console.log('✅ Specialist recommendations loaded');
-        } catch (error) {
-          console.error('❌ Failed to get specialist recommendations:', error);
-          console.error('🔧 Error details:', error.response?.data);
-          console.log('ℹ️ Specialist recommendations are optional, continuing chat...');
-        }
-      }
-
-      const updatedConversation = [...messages, userMessage, aiMessageWithId];
-      setConversationHistory(updatedConversation);
-      console.log('🎉 Message flow completed successfully');
-
-    } catch (error) {
-      console.error('❌ Error sending message:', error);
-      
-      let errorText;
-      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        errorText = "MediBot is taking longer than usual to respond. Your message has been received and I'm analyzing it now. Please wait a moment...";
-      } else if (error.response?.status === 504 || error.response?.status === 502) {
-        errorText = "MediBot is currently processing your request. This might take a moment due to high demand. Please wait...";
-      } else {
-        errorText = error.response?.data?.message || 
-                   "I apologize, but I'm having trouble connecting to MediBot. Please check your internet connection and try again.";
-      }
-      
-      const errorMessage = {
-        id: (Date.now() + 1).toString(),
-        text: errorText,
-        isUser: false,
+      const userMessage = {
+        id: Date.now().toString(),
+        text: messageText,
+        isUser: true,
         timestamp: new Date(),
-        isError: true,
-        isProcessing: error.code === 'ECONNABORTED'
       };
-      
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [messages, currentConversationId, specialistRecommendation, userId]);
 
-  const sendMessageWithImage = useCallback(async (messageText, imageFile) => {
-    if (!imageFile) return;
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
 
-    const tempImageUrl = URL.createObjectURL(imageFile);
-    
-    const userMessage = {
-      id: Date.now().toString(),
-      text: messageText || 'Image uploaded',
-      isUser: true,
-      timestamp: new Date(),
-      hasImage: true,
-      imageUrl: tempImageUrl
-    };
+      try {
+        const response = await chatAPI.sendMessage(
+          messageText,
+          currentConversationId
+        );
 
-    console.log('📸 Starting image upload process...');
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
+        const {
+          conversationId,
+          aiMessage,
+          needsSpecialist,
+          extractedTopics: aiExtractedTopics,
+        } = response.data.data;
 
-    try {
-      const formData = new FormData();
-      formData.append('message', messageText || '');
-      formData.append('image', imageFile);
-      if (currentConversationId) {
-        formData.append('conversationId', currentConversationId);
-      }
-
-      console.log('📤 Sending image to backend...');
-      const response = await chatAPI.sendMessageWithImage(formData);
-      console.log('✅ Image response received');
-      
-      const { 
-        conversationId, 
-        aiMessage,
-        needsSpecialist,
-        extractedTopics: imageTopics 
-      } = response.data.data;
-
-      if (conversationId && !currentConversationId) {
-        setCurrentConversationId(conversationId);
-      }
-
-      const aiMessageWithId = {
-        ...aiMessage,
-        id: (Date.now() + 1).toString(),
-        isImageAnalysis: true
-      };
-      
-      setMessages(prev => [...prev, aiMessageWithId]);
-
-      if (imageTopics && imageTopics.length > 0) {
-        setExtractedTopics(prev => [...prev, ...imageTopics]);
-      }
-
-      if (needsSpecialist && !specialistRecommendation) {
-        const allMessages = [...messages, userMessage, aiMessageWithId];
-        let conversationContext = buildConversationContext(allMessages);
-        
-        if (!conversationContext || conversationContext.trim().length < 20) {
-          conversationContext = `Image analysis: ${messageText || 'Medical image uploaded'}. ${aiMessageWithId.text.substring(0, 200)}`;
+        if (conversationId && !currentConversationId) {
+          setCurrentConversationId(conversationId);
         }
-        
-        console.log('📷 Image conversation context length:', conversationContext.length);
-        
-        try {
-          const specialistResponse = await specialistAPI.getRecommendations({ 
-            conversationContext 
-          });
-          
-          setSpecialistRecommendation({
-            triggered: true,
-            specialists: specialistResponse.data.data.specialists,
-            analysis: specialistResponse.data.data,
-            fromImage: true,
-            conversationContext
-          });
-        } catch (error) {
-          console.error('❌ Failed to get specialist recommendations from image:', error);
-          console.error('🔧 Error details:', error.response?.data);
-          console.log('ℹ️ Specialist recommendations are optional, continuing chat...');
+
+        const aiMessageWithId = {
+          ...aiMessage,
+          id: (Date.now() + 1).toString(),
+        };
+
+        setMessages((prev) => [...prev, aiMessageWithId]);
+
+        // -------------------------
+        // TOPIC HANDLING (SAFE)
+        // -------------------------
+        if (aiExtractedTopics && aiExtractedTopics.length > 0) {
+          setExtractedTopics((prev) => [
+            ...prev,
+            ...aiExtractedTopics,
+          ]);
         }
-      }
 
-      const updatedConversation = [...messages, userMessage, aiMessageWithId];
-      setConversationHistory(updatedConversation);
+        if (aiExtractedTopics && aiExtractedTopics.length > 0) {
+          try {
+            await healthFeedAPI.updateUserTopics(
+              aiExtractedTopics,
+              `From chat: ${messageText.substring(0, 50)}`
+            );
+          } catch (saveError) {
+            console.error('❌ Failed to save topics:', saveError);
+          }
+        }
 
-    } catch (error) {
-      console.error('❌ Error sending image message:', error);
-      
-      let errorText;
-      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        errorText = "Analyzing this image is taking longer than expected. Your image has been received and MediBot is processing it. Please wait...";
-      } else if (error.response?.status === 413) {
-        errorText = "The image is too large. Please upload an image smaller than 5MB.";
-      } else if (error.response?.status === 415) {
-        errorText = "Please upload a valid image file (JPEG, PNG, etc.).";
-      } else {
-        errorText = "I apologize, but I'm having trouble analyzing this image. Please try again or describe the issue in text.";
+        // -------------------------
+        // SPECIALIST RECOMMENDATION
+        // -------------------------
+        if (needsSpecialist && !specialistRecommendation) {
+          const allMessages = [
+            ...messages,
+            userMessage,
+            aiMessageWithId,
+          ];
+
+          let conversationContext =
+            buildConversationContext(allMessages);
+
+          if (!conversationContext || conversationContext.length < 20) {
+            conversationContext = `User: ${messageText}. Assistant: ${aiMessageWithId.text.substring(
+              0,
+              200
+            )}`;
+          }
+
+          try {
+            const specialistResponse =
+              await specialistAPI.getRecommendations({
+                conversationContext,
+              });
+
+            setSpecialistRecommendation({
+              triggered: true,
+              specialists:
+                specialistResponse.data.data.specialists,
+              analysis: specialistResponse.data.data,
+              conversationContext,
+            });
+          } catch (error) {
+            console.error(
+              '❌ Specialist recommendation failed:',
+              error
+            );
+          }
+        }
+
+        setConversationHistory((prev) => [
+          ...prev,
+          userMessage,
+          aiMessageWithId,
+        ]);
+      } catch (error) {
+        let errorText =
+          'I am having trouble connecting right now. Please try again.';
+
+        if (
+          error.code === 'ECONNABORTED' ||
+          error.message?.includes('timeout')
+        ) {
+          errorText =
+            'MediBot is still analyzing your message. Please wait...';
+        }
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            text: errorText,
+            isUser: false,
+            isError: true,
+            timestamp: new Date(),
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
       }
-      
-      const errorMessage = {
-        id: (Date.now() + 1).toString(),
-        text: errorText,
-        isUser: false,
+    },
+    [messages, currentConversationId, specialistRecommendation, userId]
+  );
+
+  // =========================
+  // SEND MESSAGE WITH IMAGE
+  // =========================
+  const sendMessageWithImage = useCallback(
+    async (messageText, imageFile) => {
+      if (!imageFile) return;
+
+      const tempImageUrl = URL.createObjectURL(imageFile);
+
+      const userMessage = {
+        id: Date.now().toString(),
+        text: messageText || 'Image uploaded',
+        isUser: true,
         timestamp: new Date(),
-        isError: true
+        hasImage: true,
+        imageUrl: tempImageUrl,
       };
-      
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [messages, currentConversationId, specialistRecommendation, userId]);
+
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
+
+      try {
+        const formData = new FormData();
+        formData.append('message', messageText || '');
+        formData.append('image', imageFile);
+        if (currentConversationId) {
+          formData.append(
+            'conversationId',
+            currentConversationId
+          );
+        }
+
+        const response =
+          await chatAPI.sendMessageWithImage(formData);
+
+        const {
+          conversationId,
+          aiMessage,
+          needsSpecialist,
+          extractedTopics: imageTopics,
+        } = response.data.data;
+
+        if (conversationId && !currentConversationId) {
+          setCurrentConversationId(conversationId);
+        }
+
+        const aiMessageWithId = {
+          ...aiMessage,
+          id: (Date.now() + 1).toString(),
+          isImageAnalysis: true,
+        };
+
+        setMessages((prev) => [...prev, aiMessageWithId]);
+
+        if (imageTopics && imageTopics.length > 0) {
+          setExtractedTopics((prev) => [
+            ...prev,
+            ...imageTopics,
+          ]);
+        }
+
+        if (needsSpecialist && !specialistRecommendation) {
+          const allMessages = [
+            ...messages,
+            userMessage,
+            aiMessageWithId,
+          ];
+
+          let conversationContext =
+            buildConversationContext(allMessages);
+
+          if (!conversationContext || conversationContext.length < 20) {
+            conversationContext = `Image analysis: ${
+              messageText || 'Medical image uploaded'
+            }. ${aiMessageWithId.text.substring(0, 200)}`;
+          }
+
+          try {
+            const specialistResponse =
+              await specialistAPI.getRecommendations({
+                conversationContext,
+              });
+
+            setSpecialistRecommendation({
+              triggered: true,
+              specialists:
+                specialistResponse.data.data.specialists,
+              analysis: specialistResponse.data.data,
+              fromImage: true,
+              conversationContext,
+            });
+          } catch (error) {
+            console.error(
+              '❌ Image specialist recommendation failed:',
+              error
+            );
+          }
+        }
+
+        setConversationHistory((prev) => [
+          ...prev,
+          userMessage,
+          aiMessageWithId,
+        ]);
+      } catch (error) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            text:
+              'There was a problem analyzing this image. Please try again.',
+            isUser: false,
+            isError: true,
+            timestamp: new Date(),
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [messages, currentConversationId, specialistRecommendation, userId]
+  );
 
   const startNewChat = useCallback(() => {
     setMessages([]);
@@ -288,6 +323,6 @@ export const useChat = (userId) => {
     loadChat,
     clearRecommendation,
     messagesEndRef,
-    scrollToBottom
+    scrollToBottom,
   };
 };
