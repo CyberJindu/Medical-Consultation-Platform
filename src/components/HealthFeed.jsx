@@ -69,6 +69,43 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     }
   };
 
+  
+const trackArticleView = async (articleId) => {
+  try {
+    // Call the view tracking endpoint
+    await healthFeedAPI.trackView(articleId);
+  } catch (error) {
+    console.error('Failed to track view:', error);
+    // Don't show error to user - views tracking should be silent
+  }
+};
+
+// Then modify how posts are rendered to track views when they become visible
+useEffect(() => {
+  // Track views for posts when they become visible in the viewport
+  if (posts.length > 0) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const articleId = entry.target.dataset.articleId;
+          if (articleId) {
+            trackArticleView(articleId);
+            // Stop observing after tracking
+            observer.unobserve(entry.target);
+          }
+        }
+      });
+    }, { threshold: 0.5 }); // Track when 50% of the card is visible
+
+    // Observe all post cards
+    document.querySelectorAll('.post-card').forEach(card => {
+      observer.observe(card);
+    });
+
+    return () => observer.disconnect();
+  }
+}, [posts]);
+
   const handleSaveArticle = async (articleId) => {
     try {
       await healthFeedAPI.saveArticle(articleId);
@@ -228,3 +265,4 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
 };
 
 export default HealthFeed;
+
