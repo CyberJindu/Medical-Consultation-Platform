@@ -97,6 +97,9 @@ export const healthFeedAPI = {
   
   getFeedByTopics: (topics) => 
     api.get('/feed/by-topics', { params: { topics } }),
+
+  trackView: (articleId) =>  
+    api.post(`/feed/articles/${articleId}/view`),
   
   saveArticle: (articleId) => 
     api.post(`/feed/articles/${articleId}/save`),
@@ -113,4 +116,5 @@ export const checkAPIHealth = () =>
   api.get('/health');
 
 export default api;
+
 
