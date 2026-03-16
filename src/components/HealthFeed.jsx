@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Heart, Share2, Calendar, Sparkles } from 'lucide-react'; // Changed Bookmark to Heart
+import { Heart, Share2, Calendar, Sparkles } from 'lucide-react';
 import { healthFeedAPI } from '../services/api.js';
 import ContentDetail from './ContentDetail';
 
