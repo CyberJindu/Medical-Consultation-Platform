@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark, Share2, Calendar, Sparkles } from 'lucide-react';
 import { healthFeedAPI } from '../services/api.js';
-import ContentDetail from './ContentDetail'; // Import the new component
+import ContentDetail from './ContentDetail';
 
 const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   const [posts, setPosts] = useState(initialPosts);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedPost, setSelectedPost] = useState(null); // NEW: State for selected post
+  const [selectedPost, setSelectedPost] = useState(null);
+  // Track viewed articles to prevent double-counting
+  const [viewedArticles, setViewedArticles] = useState(new Set());
   
   useEffect(() => {
     if (initialPosts && initialPosts.length > 0) {
@@ -72,28 +74,36 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   };
 
   const trackArticleView = async (articleId) => {
+    // Check if already viewed in this session
+    if (viewedArticles.has(articleId)) {
+      console.log('⏭️ Article already viewed in this session, skipping:', articleId);
+      return;
+    }
+    
     try {
       await healthFeedAPI.trackView(articleId);
+      // Mark as viewed to prevent double-counting
+      setViewedArticles(prev => new Set(prev).add(articleId));
+      console.log('👁️ View tracked for article:', articleId);
     } catch (error) {
       console.error('Failed to track view:', error);
     }
   };
 
-  // NEW: Handle post click to show detail view
+  // Handle post click to show detail view and track view
   const handlePostClick = (post) => {
     setSelectedPost(post);
-    // Track view when opening detail
+    // Track view only when clicking to open details
     if (post._id) {
       trackArticleView(post._id);
     }
   };
 
-  // NEW: Handle back to feed
+  // Handle back to feed
   const handleBackToFeed = () => {
     setSelectedPost(null);
   };
 
-  // Update handleSaveArticle to work with both feed and detail view
   const handleSaveArticle = async (articleId) => {
     try {
       await healthFeedAPI.saveArticle(articleId);
@@ -116,7 +126,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     }
   };
 
-  // Update handleShareArticle to work with both feed and detail view
   const handleShareArticle = async (articleId) => {
     try {
       await healthFeedAPI.shareArticle(articleId);
@@ -138,29 +147,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     }
   };
 
-  // Update view tracking observer
-  useEffect(() => {
-    if (posts.length > 0 && !selectedPost) { // Only track when not in detail view
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const articleId = entry.target.dataset.articleId;
-            if (articleId) {
-              trackArticleView(articleId);
-              observer.unobserve(entry.target);
-            }
-          }
-        });
-      }, { threshold: 0.5 });
-
-      document.querySelectorAll('.post-card').forEach(card => {
-        observer.observe(card);
-      });
-
-      return () => observer.disconnect();
-    }
-  }, [posts, selectedPost]);
-
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
@@ -171,7 +157,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
 
   if (!isOpen) return null;
 
-  // NEW: Show content detail if a post is selected
+  // Show content detail if a post is selected
   if (selectedPost) {
     return (
       <div className={`healthfeed-panel ${isOpen ? 'open' : ''}`}>
@@ -187,7 +173,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     );
   }
 
-  // Original return statement (feed view)
+  // Feed view
   return (
     <div className={`healthfeed-panel ${isOpen ? 'open' : ''}`}>
       <div className="panel-header">
@@ -233,8 +219,8 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
             {posts.map((post, index) => (
               <article 
                 key={post._id || `post-${index}`} 
-                className="post-card clickable" // Added clickable class
-                onClick={() => handlePostClick(post)} // NEW: Make card clickable
+                className="post-card clickable"
+                onClick={() => handlePostClick(post)}
                 data-article-id={post._id}
               >
                 <div className="post-header">
@@ -276,7 +262,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                     <button 
                       className="post-action"
                       onClick={(e) => {
-                        e.stopPropagation(); // Prevent card click when clicking save
+                        e.stopPropagation();
                         post._id && handleSaveArticle(post._id);
                       }}
                       title="Save for later"
@@ -287,7 +273,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                     <button 
                       className="post-action"
                       onClick={(e) => {
-                        e.stopPropagation(); // Prevent card click when clicking share
+                        e.stopPropagation();
                         post._id && handleShareArticle(post._id);
                       }}
                       title="Share article"
