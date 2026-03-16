@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown'; // ADD THIS IMPORT
-import { Bookmark, Share2, Calendar, Sparkles } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { Heart, Share2, Calendar, Sparkles } from 'lucide-react'; // Changed Bookmark to Heart
 import { healthFeedAPI } from '../services/api.js';
 import ContentDetail from './ContentDetail';
 
@@ -11,6 +11,8 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   const [selectedPost, setSelectedPost] = useState(null);
   // Track viewed articles to prevent double-counting
   const [viewedArticles, setViewedArticles] = useState(new Set());
+  // NEW: Track saved articles to prevent multiple counts
+  const [savedArticles, setSavedArticles] = useState(new Set());
   
   useEffect(() => {
     if (initialPosts && initialPosts.length > 0) {
@@ -105,15 +107,27 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     setSelectedPost(null);
   };
 
+  // UPDATED: Save handler with duplicate prevention
   const handleSaveArticle = async (articleId) => {
+    // Check if already saved in this session
+    if (savedArticles.has(articleId)) {
+      console.log('⏭️ Article already saved in this session, skipping:', articleId);
+      return;
+    }
+    
     try {
       await healthFeedAPI.saveArticle(articleId);
+      
+      // Mark as saved to prevent double-counting
+      setSavedArticles(prev => new Set(prev).add(articleId));
+      
       // Update posts list
       setPosts(posts.map(post => 
         post._id === articleId 
           ? { ...post, saveCount: (post.saveCount || 0) + 1, saved: true }
           : post
       ));
+      
       // Update selected post if it's the one being saved
       if (selectedPost && selectedPost._id === articleId) {
         setSelectedPost({
@@ -127,15 +141,27 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     }
   };
 
+  // UPDATED: Share handler with duplicate prevention
   const handleShareArticle = async (articleId) => {
+    // Check if already shared in this session (optional - you can remove this if you want multiple shares allowed)
+    if (savedArticles.has(`share-${articleId}`)) {
+      console.log('⏭️ Article already shared in this session, skipping:', articleId);
+      return;
+    }
+    
     try {
       await healthFeedAPI.shareArticle(articleId);
+      
+      // Mark as shared (optional)
+      setSavedArticles(prev => new Set(prev).add(`share-${articleId}`));
+      
       // Update posts list
       setPosts(posts.map(post => 
         post._id === articleId 
           ? { ...post, shareCount: (post.shareCount || 0) + 1 }
           : post
       ));
+      
       // Update selected post if it's the one being shared
       if (selectedPost && selectedPost._id === articleId) {
         setSelectedPost({
@@ -262,14 +288,14 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                   </div>
                 </div>
                 
-                {/* UPDATED: Title with markdown */}
+                {/* Title with markdown */}
                 <h3 className="post-title">
                   <ReactMarkdown components={CardMarkdownComponents}>
                     {post.title || ''}
                   </ReactMarkdown>
                 </h3>
                 
-                {/* UPDATED: Excerpt with markdown */}
+                {/* Excerpt with markdown */}
                 <div className="post-excerpt">
                   <ReactMarkdown components={CardMarkdownComponents}>
                     {post.excerpt || post.content?.substring(0, 150) || 'Read more...'}
@@ -303,15 +329,18 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                   
                   <div className="post-actions">
                     <button 
-                      className="post-action"
+                      className={`post-action save-button ${post.saved ? 'saved' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         post._id && handleSaveArticle(post._id);
                       }}
-                      title="Save for later"
+                      title={post.saved ? 'Liked' : 'Like this article'}
                     >
-                      <Bookmark size={16} />
-                      <span>Save ({post.saveCount || 0})</span>
+                      <Heart 
+                        size={16} 
+                        fill={post.saved ? 'currentColor' : 'none'} 
+                      />
+                      <span>{post.saveCount || 0}</span>
                     </button>
                     <button 
                       className="post-action"
@@ -322,7 +351,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                       title="Share article"
                     >
                       <Share2 size={16} />
-                      <span>Share ({post.shareCount || 0})</span>
+                      <span>{post.shareCount || 0}</span>
                     </button>
                   </div>
                 </div>
