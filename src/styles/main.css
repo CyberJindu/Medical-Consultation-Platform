@@ -2207,3 +2207,93 @@ body {
   }
 }
 
+
+
+
+
+
+/* Card-specific markdown styles */
+.card-heading {
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.card-strong {
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.card-em {
+  font-style: italic;
+  color: var(--gray-700);
+}
+
+.card-list {
+  display: inline;
+}
+
+.card-list-item {
+  display: inline;
+}
+
+.card-list-item::after {
+  content: ' • ';
+  margin: 0 4px;
+  color: var(--gray-400);
+}
+
+.card-list-item:last-child::after {
+  content: '';
+}
+
+.card-link {
+  color: var(--primary-blue);
+  text-decoration: none;
+}
+
+.card-blockquote {
+  font-style: italic;
+  color: var(--gray-600);
+  border-left: 2px solid var(--gray-300);
+  padding-left: 8px;
+  display: inline-block;
+}
+
+.card-code {
+  background: var(--gray-100);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+  color: #DC2626;
+}
+
+.card-paragraph {
+  display: inline;
+}
+
+/* Update post-excerpt to handle markdown properly */
+.post-excerpt {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: var(--spacing-4);
+}
+
+.post-excerpt p {
+  display: inline;
+  margin: 0;
+}
+
+/* Update post-title for markdown */
+.post-title {
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: var(--spacing-2);
+}
+
+.post-title p {
+  display: inline;
+  margin: 0;
+}
+
