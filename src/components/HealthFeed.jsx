@@ -69,7 +69,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
           readTime: '2 min read',
           shareCount: 0,
           saveCount: 0,
-          authorProfilePic: null // Add placeholder for profile pic
+          authorProfilePic: null
         }]);
       }
     } finally {
