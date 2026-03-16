@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Heart, Share2, Calendar, Sparkles } from 'lucide-react';
+import { Heart, Share2, Calendar, Sparkles, User } from 'lucide-react'; // Added User icon
 import { healthFeedAPI } from '../services/api.js';
 import ContentDetail from './ContentDetail';
 
@@ -11,7 +11,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   const [selectedPost, setSelectedPost] = useState(null);
   // Track viewed articles to prevent double-counting
   const [viewedArticles, setViewedArticles] = useState(new Set());
-  // NEW: Track saved articles to prevent multiple counts
+  // Track saved articles to prevent multiple counts
   const [savedArticles, setSavedArticles] = useState(new Set());
   
   useEffect(() => {
@@ -68,7 +68,8 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
           author: 'MediGuide',
           readTime: '2 min read',
           shareCount: 0,
-          saveCount: 0
+          saveCount: 0,
+          authorProfilePic: null // Add placeholder for profile pic
         }]);
       }
     } finally {
@@ -107,7 +108,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     setSelectedPost(null);
   };
 
-  // UPDATED: Save handler with duplicate prevention
   const handleSaveArticle = async (articleId) => {
     // Check if already saved in this session
     if (savedArticles.has(articleId)) {
@@ -141,9 +141,8 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     }
   };
 
-  // UPDATED: Share handler with duplicate prevention
   const handleShareArticle = async (articleId) => {
-    // Check if already shared in this session (optional - you can remove this if you want multiple shares allowed)
+    // Check if already shared in this session
     if (savedArticles.has(`share-${articleId}`)) {
       console.log('⏭️ Article already shared in this session, skipping:', articleId);
       return;
@@ -152,7 +151,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     try {
       await healthFeedAPI.shareArticle(articleId);
       
-      // Mark as shared (optional)
+      // Mark as shared
       setSavedArticles(prev => new Set(prev).add(`share-${articleId}`));
       
       // Update posts list
@@ -182,33 +181,31 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     });
   };
 
-  // Custom markdown components for card rendering (simpler version)
+  // Get initials from author name for avatar fallback
+  const getAuthorInitials = (name) => {
+    if (!name) return 'MD';
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  // Custom markdown components for card rendering
   const CardMarkdownComponents = {
-    // Headers - convert to strong/bold in cards
     h1: ({node, ...props}) => <strong className="card-heading" {...props} />,
     h2: ({node, ...props}) => <strong className="card-heading" {...props} />,
     h3: ({node, ...props}) => <strong className="card-heading" {...props} />,
     h4: ({node, ...props}) => <strong className="card-heading" {...props} />,
-    
-    // Text formatting
     strong: ({node, ...props}) => <strong className="card-strong" {...props} />,
     em: ({node, ...props}) => <em className="card-em" {...props} />,
-    
-    // Lists - show as regular text with separators
     ul: ({node, ...props}) => <span className="card-list" {...props} />,
     ol: ({node, ...props}) => <span className="card-list" {...props} />,
     li: ({node, ...props}) => <span className="card-list-item">• {props.children}</span>,
-    
-    // Links - just show text without link in cards
     a: ({node, ...props}) => <span className="card-link" {...props} />,
-    
-    // Paragraphs
     p: ({node, ...props}) => <span className="card-paragraph" {...props} />,
-    
-    // Blockquotes
     blockquote: ({node, ...props}) => <span className="card-blockquote" {...props} />,
-    
-    // Code
     code: ({node, inline, ...props}) => 
       <span className="card-code" {...props} />,
   };
@@ -302,31 +299,35 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                   </ReactMarkdown>
                 </div>
                 
-                {post.topics && post.topics.length > 0 && (
-                  <div className="post-topics">
-                    {post.topics.slice(0, 3).map((topic, topicIndex) => (
-                      <span key={topicIndex} className="topic-tag">
-                        {topic}
-                      </span>
-                    ))}
-                    {post.topics.length > 3 && (
-                      <span className="topic-tag more-topics">
-                        +{post.topics.length - 3} more
-                      </span>
-                    )}
-                  </div>
-                )}
+                {/* REMOVED: Topics section - no longer displayed */}
                 
                 <div className="post-footer">
-                  <div className="post-stats">
-                    {post.readTime && (
-                      <span className="read-time">{post.readTime}</span>
-                    )}
-                    {post.author && (
-                      <span className="post-author">By {post.author}</span>
-                    )}
+                  {/* NEW: Author section with profile pic and name */}
+                  <div className="post-author-info">
+                    {post.authorProfilePic ? (
+                      <img 
+                        src={post.authorProfilePic} 
+                        alt={post.author}
+                        className="author-avatar"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="author-avatar-fallback"
+                      style={{ display: post.authorProfilePic ? 'none' : 'flex' }}
+                    >
+                      <User size={14} />
+                    </div>
+                    <span className="author-name">
+                      {post.author || 'MediGuide Health Team'}
+                    </span>
                   </div>
                   
+                  {/* Action buttons */}
                   <div className="post-actions">
                     <button 
                       className={`post-action save-button ${post.saved ? 'saved' : ''}`}
