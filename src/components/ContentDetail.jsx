@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { 
-  Bookmark, 
+  Heart,
   Share2, 
   Calendar, 
   Clock, 
@@ -40,6 +40,7 @@ const ContentDetail = ({ post, onBack, onSave, onShare }) => {
     });
   };
 
+  // UPDATED: Save handler with toggle functionality
   const handleSave = async () => {
     try {
       await onSave(post._id);
@@ -121,9 +122,9 @@ const ContentDetail = ({ post, onBack, onSave, onShare }) => {
             <button 
               className={`action-button save-button ${isSaved ? 'saved' : ''}`}
               onClick={handleSave}
-              title={isSaved ? 'Saved' : 'Save for later'}
+              title={isSaved ? 'Liked' : 'Like this article'}
             >
-              <Bookmark size={20} fill={isSaved ? 'currentColor' : 'none'} />
+              <Heart size={20} fill={isSaved ? 'currentColor' : 'none'} />
               <span>{saveCount}</span>
             </button>
             
