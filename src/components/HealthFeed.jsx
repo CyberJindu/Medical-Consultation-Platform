@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown'; // ADD THIS IMPORT
 import { Bookmark, Share2, Calendar, Sparkles } from 'lucide-react';
 import { healthFeedAPI } from '../services/api.js';
 import ContentDetail from './ContentDetail';
@@ -155,6 +156,37 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     });
   };
 
+  // Custom markdown components for card rendering (simpler version)
+  const CardMarkdownComponents = {
+    // Headers - convert to strong/bold in cards
+    h1: ({node, ...props}) => <strong className="card-heading" {...props} />,
+    h2: ({node, ...props}) => <strong className="card-heading" {...props} />,
+    h3: ({node, ...props}) => <strong className="card-heading" {...props} />,
+    h4: ({node, ...props}) => <strong className="card-heading" {...props} />,
+    
+    // Text formatting
+    strong: ({node, ...props}) => <strong className="card-strong" {...props} />,
+    em: ({node, ...props}) => <em className="card-em" {...props} />,
+    
+    // Lists - show as regular text with separators
+    ul: ({node, ...props}) => <span className="card-list" {...props} />,
+    ol: ({node, ...props}) => <span className="card-list" {...props} />,
+    li: ({node, ...props}) => <span className="card-list-item">• {props.children}</span>,
+    
+    // Links - just show text without link in cards
+    a: ({node, ...props}) => <span className="card-link" {...props} />,
+    
+    // Paragraphs
+    p: ({node, ...props}) => <span className="card-paragraph" {...props} />,
+    
+    // Blockquotes
+    blockquote: ({node, ...props}) => <span className="card-blockquote" {...props} />,
+    
+    // Code
+    code: ({node, inline, ...props}) => 
+      <span className="card-code" {...props} />,
+  };
+
   if (!isOpen) return null;
 
   // Show content detail if a post is selected
@@ -230,8 +262,19 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                   </div>
                 </div>
                 
-                <h3 className="post-title">{post.title}</h3>
-                <p className="post-excerpt">{post.excerpt || post.content?.substring(0, 150) || 'Read more...'}...</p>
+                {/* UPDATED: Title with markdown */}
+                <h3 className="post-title">
+                  <ReactMarkdown components={CardMarkdownComponents}>
+                    {post.title || ''}
+                  </ReactMarkdown>
+                </h3>
+                
+                {/* UPDATED: Excerpt with markdown */}
+                <div className="post-excerpt">
+                  <ReactMarkdown components={CardMarkdownComponents}>
+                    {post.excerpt || post.content?.substring(0, 150) || 'Read more...'}
+                  </ReactMarkdown>
+                </div>
                 
                 {post.topics && post.topics.length > 0 && (
                   <div className="post-topics">
