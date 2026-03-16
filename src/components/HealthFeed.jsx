@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark, Share2, Calendar, Sparkles } from 'lucide-react';
 import { healthFeedAPI } from '../services/api.js';
+import ContentDetail from './ContentDetail'; // Import the new component
 
 const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   const [posts, setPosts] = useState(initialPosts);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedPost, setSelectedPost] = useState(null); // NEW: State for selected post
   
   useEffect(() => {
     if (initialPosts && initialPosts.length > 0) {
@@ -69,68 +71,95 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     }
   };
 
-  
-const trackArticleView = async (articleId) => {
-  try {
-    // Call the view tracking endpoint
-    await healthFeedAPI.trackView(articleId);
-  } catch (error) {
-    console.error('Failed to track view:', error);
-    // Don't show error to user - views tracking should be silent
-  }
-};
+  const trackArticleView = async (articleId) => {
+    try {
+      await healthFeedAPI.trackView(articleId);
+    } catch (error) {
+      console.error('Failed to track view:', error);
+    }
+  };
 
-// Then modify how posts are rendered to track views when they become visible
-useEffect(() => {
-  // Track views for posts when they become visible in the viewport
-  if (posts.length > 0) {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const articleId = entry.target.dataset.articleId;
-          if (articleId) {
-            trackArticleView(articleId);
-            // Stop observing after tracking
-            observer.unobserve(entry.target);
-          }
-        }
-      });
-    }, { threshold: 0.5 }); // Track when 50% of the card is visible
+  // NEW: Handle post click to show detail view
+  const handlePostClick = (post) => {
+    setSelectedPost(post);
+    // Track view when opening detail
+    if (post._id) {
+      trackArticleView(post._id);
+    }
+  };
 
-    // Observe all post cards
-    document.querySelectorAll('.post-card').forEach(card => {
-      observer.observe(card);
-    });
+  // NEW: Handle back to feed
+  const handleBackToFeed = () => {
+    setSelectedPost(null);
+  };
 
-    return () => observer.disconnect();
-  }
-}, [posts]);
-
+  // Update handleSaveArticle to work with both feed and detail view
   const handleSaveArticle = async (articleId) => {
     try {
       await healthFeedAPI.saveArticle(articleId);
+      // Update posts list
       setPosts(posts.map(post => 
         post._id === articleId 
           ? { ...post, saveCount: (post.saveCount || 0) + 1, saved: true }
           : post
       ));
+      // Update selected post if it's the one being saved
+      if (selectedPost && selectedPost._id === articleId) {
+        setSelectedPost({
+          ...selectedPost,
+          saveCount: (selectedPost.saveCount || 0) + 1,
+          saved: true
+        });
+      }
     } catch (error) {
       console.error('Failed to save article:', error);
     }
   };
 
+  // Update handleShareArticle to work with both feed and detail view
   const handleShareArticle = async (articleId) => {
     try {
       await healthFeedAPI.shareArticle(articleId);
+      // Update posts list
       setPosts(posts.map(post => 
         post._id === articleId 
           ? { ...post, shareCount: (post.shareCount || 0) + 1 }
           : post
       ));
+      // Update selected post if it's the one being shared
+      if (selectedPost && selectedPost._id === articleId) {
+        setSelectedPost({
+          ...selectedPost,
+          shareCount: (selectedPost.shareCount || 0) + 1
+        });
+      }
     } catch (error) {
       console.error('Failed to share article:', error);
     }
   };
+
+  // Update view tracking observer
+  useEffect(() => {
+    if (posts.length > 0 && !selectedPost) { // Only track when not in detail view
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const articleId = entry.target.dataset.articleId;
+            if (articleId) {
+              trackArticleView(articleId);
+              observer.unobserve(entry.target);
+            }
+          }
+        });
+      }, { threshold: 0.5 });
+
+      document.querySelectorAll('.post-card').forEach(card => {
+        observer.observe(card);
+      });
+
+      return () => observer.disconnect();
+    }
+  }, [posts, selectedPost]);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -142,6 +171,23 @@ useEffect(() => {
 
   if (!isOpen) return null;
 
+  // NEW: Show content detail if a post is selected
+  if (selectedPost) {
+    return (
+      <div className={`healthfeed-panel ${isOpen ? 'open' : ''}`}>
+        <div className="panel-content" style={{ padding: 0, overflow: 'hidden' }}>
+          <ContentDetail 
+            post={selectedPost}
+            onBack={handleBackToFeed}
+            onSave={handleSaveArticle}
+            onShare={handleShareArticle}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Original return statement (feed view)
   return (
     <div className={`healthfeed-panel ${isOpen ? 'open' : ''}`}>
       <div className="panel-header">
@@ -185,7 +231,12 @@ useEffect(() => {
         ) : (
           <div className="posts-list">
             {posts.map((post, index) => (
-              <article key={post._id || `post-${index}`} className="post-card">
+              <article 
+                key={post._id || `post-${index}`} 
+                className="post-card clickable" // Added clickable class
+                onClick={() => handlePostClick(post)} // NEW: Make card clickable
+                data-article-id={post._id}
+              >
                 <div className="post-header">
                   <div className="post-date">
                     <Calendar size={14} />
@@ -224,7 +275,10 @@ useEffect(() => {
                   <div className="post-actions">
                     <button 
                       className="post-action"
-                      onClick={() => post._id && handleSaveArticle(post._id)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent card click when clicking save
+                        post._id && handleSaveArticle(post._id);
+                      }}
                       title="Save for later"
                     >
                       <Bookmark size={16} />
@@ -232,7 +286,10 @@ useEffect(() => {
                     </button>
                     <button 
                       className="post-action"
-                      onClick={() => post._id && handleShareArticle(post._id)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent card click when clicking share
+                        post._id && handleShareArticle(post._id);
+                      }}
                       title="Share article"
                     >
                       <Share2 size={16} />
@@ -265,4 +322,3 @@ useEffect(() => {
 };
 
 export default HealthFeed;
-
