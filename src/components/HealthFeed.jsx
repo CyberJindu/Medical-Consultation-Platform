@@ -303,29 +303,29 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                 
                 <div className="post-footer">
                   {/* NEW: Author section with profile pic and name */}
-                  <div className="post-author-info">
-                    {post.authorProfilePic ? (
-                      <img 
-                        src={post.authorProfilePic} 
-                        alt={post.author}
-                        className="author-avatar"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div 
-                      className="author-avatar-fallback"
-                      style={{ display: post.authorProfilePic ? 'none' : 'flex' }}
-                    >
-                      <User size={14} />
-                    </div>
-                    <span className="author-name">
-                      {post.author || 'MediGuide Health Team'}
-                    </span>
-                  </div>
+<div className="post-author-info">
+  {post.authorProfilePic ? (
+    <img 
+      src={post.authorProfilePic} 
+      alt={post.author}
+      className="author-avatar"
+      onError={(e) => {
+        e.target.onerror = null;
+        e.target.style.display = 'none';
+        e.target.parentNode.querySelector('.author-avatar-fallback').style.display = 'flex';
+      }}
+    />
+  ) : null}
+  <div 
+    className="author-avatar-fallback"
+    style={{ display: post.authorProfilePic ? 'none' : 'flex' }}
+  >
+    <User size={14} />
+  </div>
+  <span className="author-name">
+    {post.author || 'MediGuide Health Team'}
+  </span>
+</div>
                   
                   {/* Action buttons */}
                   <div className="post-actions">
