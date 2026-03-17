@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Heart, Share2, Calendar, Sparkles, User } from 'lucide-react'; // Added User icon
+import { Heart, Share2, Calendar, Sparkles, User } from 'lucide-react';
 import { healthFeedAPI } from '../services/api.js';
 import ContentDetail from './ContentDetail';
 
@@ -35,16 +35,29 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
       
       if (response.data && response.data.success) {
         const feedData = response.data.data?.feed || [];
-        console.log('✅ Personalized feed loaded:', feedData.length, 'posts');
         
-        if (feedData.length > 0) {
+        // Map the data to include 'saved' from backend's likedByUser
+        const processedFeed = feedData.map(post => ({
+          ...post,
+          saved: post.likedByUser || false 
+        }));
+
+        console.log('✅ Personalized feed loaded:', processedFeed.length, 'posts');
+        
+        if (processedFeed.length > 0) {
           console.log('📝 First post:', {
-            title: feedData[0]?.title,
-            topics: feedData[0]?.topics
+            title: processedFeed[0]?.title,
+            topics: processedFeed[0]?.topics
           });
         }
         
-        setPosts(feedData);
+        // Initialize savedArticles Set with IDs of posts that are already liked
+        const likedIds = processedFeed
+          .filter(post => post.likedByUser)
+          .map(post => post._id);
+        
+        setSavedArticles(new Set(likedIds));
+        setPosts(processedFeed);
       } else {
         console.error('❌ Invalid response structure:', response.data);
         throw new Error('Invalid response from server');
@@ -96,7 +109,10 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
 
   // Handle post click to show detail view and track view
   const handlePostClick = (post) => {
-    setSelectedPost(post);
+    setSelectedPost({
+      ...post,
+      saved: post.saved || false
+    });
     // Track view only when clicking to open details
     if (post._id) {
       trackArticleView(post._id);
@@ -116,15 +132,19 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     }
     
     try {
-      await healthFeedAPI.saveArticle(articleId);
+      const response = await healthFeedAPI.saveArticle(articleId);
       
       // Mark as saved to prevent double-counting
       setSavedArticles(prev => new Set(prev).add(articleId));
       
-      // Update posts list
+      // Update posts list with the response data
       setPosts(posts.map(post => 
         post._id === articleId 
-          ? { ...post, saveCount: (post.saveCount || 0) + 1, saved: true }
+          ? { 
+              ...post, 
+              saveCount: response.data.data.saveCount, 
+              saved: response.data.data.liked 
+            }
           : post
       ));
       
@@ -132,8 +152,8 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
       if (selectedPost && selectedPost._id === articleId) {
         setSelectedPost({
           ...selectedPost,
-          saveCount: (selectedPost.saveCount || 0) + 1,
-          saved: true
+          saveCount: response.data.data.saveCount,
+          saved: response.data.data.liked
         });
       }
     } catch (error) {
@@ -179,17 +199,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
       day: 'numeric',
       year: 'numeric'
     });
-  };
-
-  // Get initials from author name for avatar fallback
-  const getAuthorInitials = (name) => {
-    if (!name) return 'MD';
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
   };
 
   // Custom markdown components for card rendering
@@ -299,33 +308,31 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                   </ReactMarkdown>
                 </div>
                 
-                {/* REMOVED: Topics section - no longer displayed */}
-                
                 <div className="post-footer">
-                  {/* NEW: Author section with profile pic and name */}
-<div className="post-author-info">
-  {post.authorProfilePic ? (
-    <img 
-      src={post.authorProfilePic} 
-      alt={post.author}
-      className="author-avatar"
-      onError={(e) => {
-        e.target.onerror = null;
-        e.target.style.display = 'none';
-        e.target.parentNode.querySelector('.author-avatar-fallback').style.display = 'flex';
-      }}
-    />
-  ) : null}
-  <div 
-    className="author-avatar-fallback"
-    style={{ display: post.authorProfilePic ? 'none' : 'flex' }}
-  >
-    <User size={14} />
-  </div>
-  <span className="author-name">
-    {post.author || 'MediGuide Health Team'}
-  </span>
-</div>
+                  {/* Author section with profile pic and name */}
+                  <div className="post-author-info">
+                    {post.authorProfilePic ? (
+                      <img 
+                        src={post.authorProfilePic} 
+                        alt={post.author}
+                        className="author-avatar"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.style.display = 'none';
+                          e.target.parentNode.querySelector('.author-avatar-fallback').style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="author-avatar-fallback"
+                      style={{ display: post.authorProfilePic ? 'none' : 'flex' }}
+                    >
+                      <User size={14} />
+                    </div>
+                    <span className="author-name">
+                      {post.author || 'MediGuide Health Team'}
+                    </span>
+                  </div>
                   
                   {/* Action buttons */}
                   <div className="post-actions">
