@@ -40,12 +40,20 @@ const ContentDetail = ({ post, onBack, onSave, onShare }) => {
     });
   };
 
-  // UPDATED: Save handler with toggle functionality
+  // UPDATED: Save handler with toggle functionality using response data
   const handleSave = async () => {
     try {
-      await onSave(post._id);
-      setIsSaved(!isSaved);
-      setSaveCount(prev => isSaved ? prev - 1 : prev + 1);
+      const response = await onSave(post._id);
+      
+      // If onSave returns the response data, use it to update state
+      if (response && response.data) {
+        setIsSaved(response.data.data.liked);
+        setSaveCount(response.data.data.saveCount);
+      } else {
+        // Fallback to toggle if no response data
+        setIsSaved(!isSaved);
+        setSaveCount(prev => isSaved ? prev - 1 : prev + 1);
+      }
     } catch (error) {
       console.error('Failed to save article:', error);
     }
@@ -60,15 +68,23 @@ const ContentDetail = ({ post, onBack, onSave, onShare }) => {
           text: post.excerpt || `Check out this health article: ${post.title}`,
           url: window.location.href,
         });
-        await onShare(post._id);
-        setShareCount(prev => prev + 1);
+        const response = await onShare(post._id);
+        if (response && response.data) {
+          setShareCount(response.data.data.shareCount);
+        } else {
+          setShareCount(prev => prev + 1);
+        }
       } else {
         // Fallback: copy link to clipboard
         await navigator.clipboard.writeText(window.location.href);
         setShowShareTooltip(true);
         setTimeout(() => setShowShareTooltip(false), 2000);
-        await onShare(post._id);
-        setShareCount(prev => prev + 1);
+        const response = await onShare(post._id);
+        if (response && response.data) {
+          setShareCount(response.data.data.shareCount);
+        } else {
+          setShareCount(prev => prev + 1);
+        }
       }
     } catch (error) {
       console.error('Failed to share article:', error);
