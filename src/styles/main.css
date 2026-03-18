@@ -2406,22 +2406,58 @@ a:focus,
 
 
 
-/* Heart button styles - RED not blue */
-.save-button {
+/* ===== HEART BUTTON STYLES - ULTIMATE FIX ===== */
+.post-action.save-button {
   transition: all 0.2s ease;
 }
 
-.save-button.saved {
-  color: #ef4444 !important; /* Red color for liked heart */
-  background: #fee2e2 !important; /* Light red background */
+.post-action.save-button.saved {
+  color: #ef4444 !important;
+  background: #fee2e2 !important;
 }
 
-.save-button.saved:hover {
+.post-action.save-button.saved svg {
+  fill: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.post-action.save-button.saved:hover {
   color: #dc2626 !important;
   background: #fecaca !important;
 }
 
-.save-button:not(.saved):hover {
+.post-action.save-button.saved:hover svg {
+  fill: #dc2626 !important;
+  color: #dc2626 !important;
+}
+
+.post-action.save-button:not(.saved):hover {
+  color: #ef4444 !important;
+  background: #fee2e2 !important;
+}
+
+.post-action.save-button:not(.saved):hover svg {
+  fill: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+/* Heart animation on click */
+.post-action.save-button:active {
+  transform: scale(1.2);
+}
+
+/* For ContentDetail page */
+.action-button.save-button.saved {
+  color: #ef4444 !important;
+  background: #fee2e2 !important;
+}
+
+.action-button.save-button.saved svg {
+  fill: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.action-button.save-button:not(.saved):hover {
   color: #ef4444 !important;
   background: #fee2e2 !important;
 }
