@@ -2368,3 +2368,49 @@ body {
     height: 24px;
   }
 }
+
+
+
+
+/* Heart button styles - RED not blue */
+.save-button {
+  transition: all 0.2s ease;
+}
+
+.save-button.saved {
+  color: #ef4444 !important; /* Red color for liked heart */
+  background: #fee2e2 !important; /* Light red background */
+}
+
+.save-button.saved:hover {
+  color: #dc2626 !important;
+  background: #fecaca !important;
+}
+
+.save-button:not(.saved):hover {
+  color: #ef4444 !important;
+  background: #fee2e2 !important;
+}
+
+/* Heart animation on click */
+.save-button:active {
+  transform: scale(1.2);
+}
+
+/* Post action heart specific */
+.post-action.save-button.saved {
+  color: #ef4444 !important;
+}
+
+.post-action.save-button:not(.saved):hover {
+  color: #ef4444 !important;
+}
+
+/* Share button - no count, just icon */
+.share-button span {
+  display: none !important; /* Hide any share count text */
+}
+
+.action-button.share-button {
+  padding: 8px; /* Adjust padding since no text */
+}
