@@ -1949,10 +1949,11 @@ a:focus,
   background: #E5E7EB;
 }
 
+/*
 .action-button.save-button.saved {
   color: #2563EB;
   background: #DBEAFE;
-}
+} */
 
 .share-container {
   position: relative;
