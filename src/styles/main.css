@@ -43,6 +43,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 body {
@@ -111,6 +113,37 @@ body {
 .icon-button:hover {
   color: var(--primary-blue);
   background-color: var(--gray-50);
+}
+
+/* Specifically for clickable elements */
+button, 
+a, 
+.clickable, 
+.post-card, 
+.post-action,
+.back-button,
+.close-button,
+.icon-button,
+.hamburger-button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent !important;
+  outline: none !important;
+}
+
+/* Remove focus outline on mobile (but keep for accessibility on keyboard) */
+button:focus,
+a:focus,
+.clickable:focus {
+  outline: none;
+}
+
+/* Add a subtle feedback for taps */
+.post-card:active,
+.post-action:active,
+.back-button:active,
+.close-button:active {
+  opacity: 0.7;
+  transition: opacity 0.1s ease;
 }
 
 .brand-name {
@@ -2414,3 +2447,9 @@ body {
 .action-button.share-button {
   padding: 8px; /* Adjust padding since no text */
 }
+
+
+
+
+
+
