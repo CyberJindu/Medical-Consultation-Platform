@@ -54,6 +54,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
         }
         
         setPosts(processedFeed);
+        console.log('❤️ First post saved status after set:', processedFeed[0]?.saved);
       } else {
         console.error('❌ Invalid response structure:', response.data);
         throw new Error('Invalid response from server');
