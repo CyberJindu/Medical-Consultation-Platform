@@ -151,7 +151,6 @@ const ContentDetail = ({ post, onBack, onSave, onShare }) => {
                 title="Share article"
               >
                 <Share2 size={20} />
-                <span>{shareCount}</span>
               </button>
               {showShareTooltip && (
                 <div className="share-tooltip">
