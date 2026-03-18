@@ -29,6 +29,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     try {
       console.log('📡 Fetching personalized health feed...');
       const response = await healthFeedAPI.getPersonalizedFeed();
+      console.log('📊 FULL FEED RESPONSE:', JSON.stringify(response.data, null, 2));
       console.log('📊 Feed API response:', response.data);
       
       if (response.data && response.data.success) {
