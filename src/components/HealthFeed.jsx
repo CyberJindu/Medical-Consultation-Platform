@@ -42,6 +42,8 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
           saveCount: post.saveCount || 0 // Ensure saveCount exists
         }));
 
+        console.log('🔍 First post saved status:', processedFeed[0]?.saved, 'from likedByUser:', processedFeed[0]?.likedByUser);
+
         console.log('✅ Personalized feed loaded:', processedFeed.length, 'posts');
         
         if (processedFeed.length > 0) {
