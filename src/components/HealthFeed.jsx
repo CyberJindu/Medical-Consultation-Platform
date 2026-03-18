@@ -11,8 +11,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   const [selectedPost, setSelectedPost] = useState(null);
   // Track viewed articles to prevent double-counting
   const [viewedArticles, setViewedArticles] = useState(new Set());
-  // Track saved articles to prevent multiple counts
-  const [savedArticles, setSavedArticles] = useState(new Set());
   
   useEffect(() => {
     if (initialPosts && initialPosts.length > 0) {
@@ -39,7 +37,8 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
         // Map the data to include 'saved' from backend's likedByUser
         const processedFeed = feedData.map(post => ({
           ...post,
-          saved: post.likedByUser || false 
+          saved: post.likedByUser || false,
+          saveCount: post.saveCount || 0 // Ensure saveCount exists
         }));
 
         console.log('✅ Personalized feed loaded:', processedFeed.length, 'posts');
@@ -51,12 +50,6 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
           });
         }
         
-        // Initialize savedArticles Set with IDs of posts that are already liked
-        const likedIds = processedFeed
-          .filter(post => post.likedByUser)
-          .map(post => post._id);
-        
-        setSavedArticles(new Set(likedIds));
         setPosts(processedFeed);
       } else {
         console.error('❌ Invalid response structure:', response.data);
@@ -125,17 +118,8 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   };
 
   const handleSaveArticle = async (articleId) => {
-    // Check if already saved in this session
-    if (savedArticles.has(articleId)) {
-      console.log('⏭️ Article already saved in this session, skipping:', articleId);
-      return;
-    }
-    
     try {
       const response = await healthFeedAPI.saveArticle(articleId);
-      
-      // Mark as saved to prevent double-counting
-      setSavedArticles(prev => new Set(prev).add(articleId));
       
       // Update posts list with the response data
       setPosts(posts.map(post => 
@@ -162,19 +146,10 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
   };
 
   const handleShareArticle = async (articleId) => {
-    // Check if already shared in this session
-    if (savedArticles.has(`share-${articleId}`)) {
-      console.log('⏭️ Article already shared in this session, skipping:', articleId);
-      return;
-    }
-    
     try {
       await healthFeedAPI.shareArticle(articleId);
       
-      // Mark as shared
-      setSavedArticles(prev => new Set(prev).add(`share-${articleId}`));
-      
-      // Update posts list
+      // Update posts list (just update the UI, don't show count)
       setPosts(posts.map(post => 
         post._id === articleId 
           ? { ...post, shareCount: (post.shareCount || 0) + 1 }
@@ -351,7 +326,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                       <span>{post.saveCount || 0}</span>
                     </button>
                     <button 
-                      className="post-action"
+                      className="post-action share-button"
                       onClick={(e) => {
                         e.stopPropagation();
                         post._id && handleShareArticle(post._id);
@@ -359,7 +334,7 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                       title="Share article"
                     >
                       <Share2 size={16} />
-                      <span>{post.shareCount || 0}</span>
+                      {/* REMOVED: Share count - only show icon */}
                     </button>
                   </div>
                 </div>
