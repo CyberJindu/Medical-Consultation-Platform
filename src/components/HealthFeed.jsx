@@ -145,28 +145,43 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
     }
   };
 
-  const handleShareArticle = async (articleId) => {
+  const handleShareArticle = async (articleId, postTitle, postExcerpt) => {
     try {
-      await healthFeedAPI.shareArticle(articleId);
-      
-      // Update posts list (just update the UI, don't show count)
-      setPosts(posts.map(post => 
-        post._id === articleId 
-          ? { ...post, shareCount: (post.shareCount || 0) + 1 }
-          : post
-      ));
-      
-      // Update selected post if it's the one being shared
-      if (selectedPost && selectedPost._id === articleId) {
-        setSelectedPost({
-          ...selectedPost,
-          shareCount: (selectedPost.shareCount || 0) + 1
-        });
-      }
-    } catch (error) {
-      console.error('Failed to share article:', error);
+      // Try native share first (mobile)
+      if (navigator.share) {
+        await navigator.share({
+        title: postTitle,
+        text: postExcerpt || `Check out this health article: ${postTitle}`,
+        url: window.location.origin + '/dashboard', // You can customize this URL
+      });
+    } else {
+      // Fallback: copy link to clipboard
+      await navigator.clipboard.writeText(window.location.origin + '/dashboard');
+      // You could show a toast notification here
+      alert('Link copied to clipboard!');
     }
-  };
+    
+    // After successful share, call the API to increment count
+    await healthFeedAPI.shareArticle(articleId);
+    
+    // Update posts list
+    setPosts(posts.map(post => 
+      post._id === articleId 
+        ? { ...post, shareCount: (post.shareCount || 0) + 1 }
+        : post
+    ));
+    
+    // Update selected post if it's the one being shared
+    if (selectedPost && selectedPost._id === articleId) {
+      setSelectedPost({
+        ...selectedPost,
+        shareCount: (selectedPost.shareCount || 0) + 1
+      });
+    }
+  } catch (error) {
+    console.error('Failed to share article:', error);
+  }
+};
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -329,12 +344,12 @@ const HealthFeed = ({ posts: initialPosts = [], isOpen, onClose, userId }) => {
                       className="post-action share-button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        post._id && handleShareArticle(post._id);
+                        post._id && handleShareArticle(post._id, post.title, post.excerpt);
                       }}
                       title="Share article"
                     >
                       <Share2 size={16} />
-                      {/* REMOVED: Share count - only show icon */}
+                      
                     </button>
                   </div>
                 </div>
