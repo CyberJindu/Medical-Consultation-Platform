@@ -2487,6 +2487,128 @@ a:focus,
 
 
 
+/* Chat History Delete Button */
+.chat-item-wrapper {
+  position: relative;
+  margin-bottom: var(--spacing-3);
+}
 
+.chat-item-wrapper.deleting {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.chat-delete-button {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--gray-400);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-base);
+  transition: all 0.2s ease;
+  z-index: 5;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.chat-item-wrapper:hover .chat-delete-button {
+  opacity: 1;
+  visibility: visible;
+}
+
+.chat-delete-button:hover {
+  color: #ef4444;
+  background: #fee2e2;
+  transform: scale(1.1);
+}
+
+/* Delete Confirmation Overlay */
+.delete-confirm-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+.delete-confirm-popup {
+  background: white;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 200px;
+}
+
+.delete-confirm-popup p {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-800);
+}
+
+.delete-confirm-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.delete-confirm-yes,
+.delete-confirm-no {
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.delete-confirm-yes {
+  background: #ef4444;
+  color: white;
+}
+
+.delete-confirm-yes:hover {
+  background: #dc2626;
+}
+
+.delete-confirm-no {
+  background: var(--gray-200);
+  color: var(--gray-700);
+}
+
+.delete-confirm-no:hover {
+  background: var(--gray-300);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .chat-delete-button {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .delete-confirm-popup {
+    padding: 12px;
+    max-width: 180px;
+  }
+  
+  .delete-confirm-yes,
+  .delete-confirm-no {
+    padding: 4px 12px;
+  }
+}
 
 
