@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, History, Loader, Trash2, X } from 'lucide-react';
+import { Calendar, Clock, History, Loader, Trash2 } from 'lucide-react';
 import { chatAPI } from '../services/api.js';
 
 const ChatHistory = ({ chats, isOpen, onClose, onSelectChat, onDeleteChat, isLoading = false }) => {
@@ -119,10 +119,19 @@ const ChatHistory = ({ chats, isOpen, onClose, onSelectChat, onDeleteChat, isLoa
                   <Trash2 size={16} />
                 </button>
 
-                {/* Confirmation overlay */}
+                {/* Confirmation overlay - FIXED */}
                 {confirmDelete === chat.id && (
-                  <div className="delete-confirm-overlay">
-                    <div className="delete-confirm-popup">
+                  <div 
+                    className="delete-confirm-overlay"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancelDelete(e);
+                    }}
+                  >
+                    <div 
+                      className="delete-confirm-popup"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <p>Delete this conversation?</p>
                       <div className="delete-confirm-buttons">
                         <button
