@@ -2526,33 +2526,36 @@ a:focus,
   transform: scale(1.1);
 }
 
-/* Delete Confirmation Overlay */
+/* Delete Confirmation Overlay - FIXED */
 .delete-confirm-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-  backdrop-filter: blur(2px);
+  z-index: 100;
+  cursor: pointer;
 }
 
 .delete-confirm-popup {
   background: white;
-  padding: 16px;
+  padding: 20px;
   border-radius: var(--radius-lg);
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  max-width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  min-width: 200px;
+  position: relative;
+  z-index: 101;
+  pointer-events: auto;
 }
 
 .delete-confirm-popup p {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   font-size: 14px;
   font-weight: 500;
   color: var(--gray-800);
@@ -2562,17 +2565,19 @@ a:focus,
   display: flex;
   gap: 12px;
   justify-content: center;
+  pointer-events: auto;
 }
 
 .delete-confirm-yes,
 .delete-confirm-no {
-  padding: 6px 16px;
+  padding: 8px 20px;
   border-radius: var(--radius-full);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
+  pointer-events: auto;
 }
 
 .delete-confirm-yes {
@@ -2582,6 +2587,7 @@ a:focus,
 
 .delete-confirm-yes:hover {
   background: #dc2626;
+  transform: scale(1.02);
 }
 
 .delete-confirm-no {
@@ -2591,6 +2597,12 @@ a:focus,
 
 .delete-confirm-no:hover {
   background: var(--gray-300);
+  transform: scale(1.02);
+}
+
+/* Make sure the delete button stays above */
+.chat-delete-button {
+  z-index: 15;
 }
 
 /* Mobile adjustments */
@@ -2601,14 +2613,14 @@ a:focus,
   }
   
   .delete-confirm-popup {
-    padding: 12px;
-    max-width: 180px;
+    padding: 16px;
+    min-width: 160px;
   }
   
   .delete-confirm-yes,
   .delete-confirm-no {
-    padding: 4px 12px;
+    padding: 6px 16px;
+    font-size: 13px;
   }
 }
-
 
