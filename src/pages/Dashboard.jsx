@@ -20,7 +20,7 @@ const Dashboard = ({ user, onLogout }) => {
     isLoading: isLoadingChat,
     specialistRecommendation,
     sendMessage,
-    sendMessageWithImage, // NEW: Get image handler
+    sendMessageWithImage, 
     startNewChat,
     loadChat,
     clearRecommendation
@@ -66,6 +66,11 @@ const Dashboard = ({ user, onLogout }) => {
   const handleShowHistory = () => {
     setActiveView(activeView === 'history' ? 'chat' : 'history');
   };
+
+  // In Dashboard.jsx, add this function
+const handleDeleteChat = async (chatId) => {
+  setChatHistory(prevHistory => prevHistory.filter(chat => chat.id !== chatId));
+};
 
   const handleShowHealthFeed = () => {
     setActiveView(activeView === 'healthFeed' ? 'chat' : 'healthFeed');
@@ -130,6 +135,7 @@ const Dashboard = ({ user, onLogout }) => {
         isOpen={activeView === 'history'}
         onClose={() => setActiveView('chat')}
         onSelectChat={handleSelectChat}
+        onDeleteChat={handleDeleteChat}
         isLoading={isLoadingHistory}
       />
 
